@@ -1,14 +1,23 @@
-/* Variables de marca de MapAid.
-   Colores tomados del logo. No usar colores sueltos fuera de aquí. */
+/* Variables de marca MapAid. No usar colores sueltos fuera de aquí.
+   TODO (Helen): completar con fondos, tipografía y espaciados. */
 :root {
-  --mapaid-navy: #092E4E;
+  --mapaid-navy:  #092E4E;
   --mapaid-coral: #FA4531;
-  --mapaid-teal: #1F9E7A;
+  --mapaid-teal:  #1F9E7A;
 
   /* Estados de una sugerencia */
-  --estado-pendiente: #BA7517;
-  --estado-confirmado: #639922;
-  --estado-rechazado: #C0392B;
+  --estado-pendiente:  #BA7517;
+  --estado-confirmada: #2E7D32;
+  --estado-rechazada:  #C0392B;
+  --estado-corregida:  #6A4FB6;
 
-  /* TODO (Josema/Helen): fondos, bordes, tipografía y espaciados */
+  /* Niveles de daño (escala xBD) */
+  --dano-menor:     #F0C419;
+  --dano-mayor:     #E8871A;
+  --dano-destruido: #C0392B;
+
+  /* Coherencia (pieza 2 de la IA) */
+  --coherente:       #2E7D32;
+  --posible:         #BA7517;
+  --no-detectable:   #5F5E5A;
 }

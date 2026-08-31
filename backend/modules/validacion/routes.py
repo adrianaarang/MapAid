@@ -1,8 +1,8 @@
 """Endpoints del módulo de validación.
 
-Previstos:
-  GET   /api/validacion/pendientes  -> cola de revisión
-  PATCH /api/validacion/{id}        -> confirmar / rechazar / corregir
+GET   /api/validacion/pendientes
+PATCH /api/validacion/{id}
+GET   /api/validacion/{id}/historial
 
 TODO (Gema).
 """

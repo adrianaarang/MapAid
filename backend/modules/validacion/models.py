@@ -1,5 +1,5 @@
-"""Acceso a datos del módulo de validación.
+"""Acceso a datos de la validación.
 
-TODO (Elena): actualizar el estado de una sugerencia y registrar quién
-la validó y cuándo.
+TODO (Elena): aplicar_validacion (actualiza estado + escribe en
+tabla validaciones), historial.
 """

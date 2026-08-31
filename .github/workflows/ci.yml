@@ -1,9 +1,5 @@
 name: CI
-
-on:
-  push:
-  pull_request:
-
+on: [push, pull_request]
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -12,7 +8,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Instalar dependencias
-        run: pip install -r backend/requirements-dev.txt
-      - name: Ejecutar tests
-        run: PYTHONPATH=backend python -m pytest tests/backend -q
+      - run: pip install -r backend/requirements-dev.txt
+      - run: PYTHONPATH=backend python -m pytest tests/backend -q

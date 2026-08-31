@@ -1,77 +1,69 @@
 # MapAid — Mapear para ayudar
 
-Tras una emergencia el territorio cambia, pero el mapa oficial tarda en
-reflejarlo. MapAid compara imágenes de satélite de antes y después del
-desastre, sugiere qué ha cambiado (edificios dañados, carreteras cortadas,
-estructuras nuevas) y deja que **una persona confirme, rechace o corrija**
-cada sugerencia antes de darla por válida.
+Reto 2 — Humanitarian OpenStreetMap Team (HOT)
 
-La IA acelera el trabajo; nunca decide sola.
-
----
-
-## Estado
-
-🚧 En desarrollo — estructura inicial del repositorio.
+Una IA entrenada con xBD compara imágenes de Copernicus antes/después
+de un desastre y sugiere qué ha cambiado. Las personas sobre el terreno
+también pueden reportar lo que ven: la IA cruza su descripción con las
+imágenes de Copernicus y dice si es coherente. Nada llega al mapa sin
+que una persona lo confirme.
 
 ## Equipo
 
 | Quién | Área |
 |---|---|
-| Elena | Datos: dataset xBD, Overpass API (OSM), esquema de la base de datos |
-| Gema | Backend: endpoints de detección y validación |
-| Adriana | IA: comparación de imágenes antes/después |
-| Josema | Mapa: visualización sobre OpenStreetMap con capas de estado |
-| Helen | Interfaz: tarjeta de validación y flujo de revisión humana |
+| Elena | Datos: xBD, cliente Copernicus, esquema BD |
+| Gema | Backend: endpoints detección, validación, reportes |
+| Adriana | IA: modelo entrenado (pieza 1) + cruce observación-satélite (pieza 2) |
+| Josema | Mapa: Leaflet sobre OSM con imágenes Copernicus de fondo |
+| Helen | Interfaz: tarjeta validación, formulario reporte, cola de revisión |
 
 ## Arquitectura
 
 ```
-backend/          API en FastAPI
+backend/
   modules/
-    deteccion/    comparación de imágenes y generación de sugerencias
-    validacion/   aceptar / rechazar / corregir una sugerencia
-  integrations/   clientes de fuentes externas (Overpass API de OSM)
-  db/             esquema y migraciones
-frontend/         HTML/CSS/JS sin framework
+    deteccion/    sugerencias de la IA sobre imágenes Copernicus
+    validacion/   confirmación / rechazo / corrección humana
+    reportes/     observaciones aportadas por personas
+  integrations/   clientes externos (Copernicus CEMS, Overpass/OSM)
+  ia/             modelo de detección de daños (entrenado con xBD)
+  db/             esquema, migraciones, seed
+frontend/
   js/core/
-    mapa/         mapa Leaflet sobre teselas de OpenStreetMap
-    validacion/   tarjeta antes/después y panel de revisión
+    mapa/         Leaflet + capas por estado y origen
+    validacion/   tarjeta antes/después y cola de revisión
+    reportes/     formulario para reportar lo que se ve
 data/
-  raw/            datos descargados sin procesar (no se versionan)
-  processed/      pares de imágenes ya preparados (no se versionan)
-tests/            pruebas de backend y frontend
-docs/             documentación del proyecto
+  raw/xbd/        imágenes y etiquetas xBD (no se versionan, ver docs/datos.md)
+  processed/      resultados del entrenamiento
+docs/             arquitectura, datos, convenciones
+tests/            pruebas backend y frontend
 ```
 
 ## Fuentes de datos
 
-- **OpenStreetMap** (vía Overpass API) — mapa base y estado del terreno
-  antes del desastre. Datos abiertos, mantenidos por comunidades locales.
-- **xBD / xView2** — pares de imágenes de satélite antes/después de
-  desastres reales, con daños ya etiquetados.
-
-MapAid **no escribe nada en el OpenStreetMap público**. Las validaciones
-se guardan en la propia aplicación, igual que HOT revisa en su Tasking
-Manager antes de publicar.
+- **Copernicus CEMS** — imágenes oficiales pre/post desastre (gratuito)
+- **xBD / xView2** — entrenamiento y evaluación del modelo de daños
+- **OpenStreetMap** — mapa base (Overpass API)
 
 ## Puesta en marcha
 
 ```bash
-# Backend
 cd backend
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+venv\Scripts\activate      # Windows
 pip install -r requirements.txt
+copy .env.example .env
+python -m db.seed
 python -m uvicorn main:app --reload --port 8000
-
-# Frontend (en otra terminal, desde frontend/)
-python -m http.server 5500
 ```
 
-Abrir http://localhost:5500/pages/mapa.html
-
-Copiar `backend/.env.example` a `backend/.env` antes de arrancar.
+```bash
+# En otra terminal, desde la RAÍZ del proyecto
+python -m http.server 5500
+# Abrir: http://localhost:5500/frontend/pages/mapa.html
+```
 
 ## Pruebas
 
@@ -79,13 +71,8 @@ Copiar `backend/.env.example` a `backend/.env` antes de arrancar.
 PYTHONPATH=backend python -m pytest tests/
 ```
 
-## Consideraciones éticas
+## Entrenamiento del modelo (Google Colab)
 
-- **Validación humana obligatoria:** ninguna sugerencia de la IA cuenta
-  como confirmada hasta que una persona la revisa.
-- **Límites declarados:** el modelo no detecta daño estructural interno
-  ni interiores destruidos bajo techos intactos. Se dice abiertamente.
-- **Frescura del dato:** cada sugerencia lleva fecha; pasado un tiempo se
-  marca como pendiente de reconfirmar.
-- **Conocimiento local:** OSM lo mantienen comunidades locales; MapAid
-  se apoya en su trabajo, no lo sustituye.
+Ver `backend/ia/README_COLAB.md` — se ejecuta en Colab con GPU gratuita,
+tarda 2-3 horas con el subconjunto `train` de xBD.
+

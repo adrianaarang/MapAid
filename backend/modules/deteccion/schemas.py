@@ -1,9 +1,8 @@
 """Esquemas del módulo de detección.
 
-Define la forma de una sugerencia de cambio: qué tipo de cambio es
-(edificio dañado, carretera cortada, estructura nueva), su nivel de
-confianza, coordenadas y fecha de las imágenes comparadas.
+Escala de daño xBD (se replica tal cual para que las etiquetas reales
+encajen sin traducción):
+  no-damage / minor-damage / major-damage / destroyed / un-classified
 
-TODO (Adriana): definir los enums de tipo de cambio y los modelos
-Pydantic de entrada/salida.
+TODO (Adriana): DamageLevel, SuggestionStatus, Suggestion, AnalyzeRequest.
 """

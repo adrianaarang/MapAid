@@ -1,7 +1,8 @@
 """Reglas de negocio del módulo de detección.
 
-Orquesta: recibe el par de imágenes, llama al comparador, y guarda las
-sugerencias resultantes en estado "pendiente".
+Regla central: todas las sugerencias nacen en estado "pendiente".
+La IA nunca confirma sus propias detecciones.
 
-TODO (Adriana + Gema).
+TODO (Adriana + Gema): escenas_disponibles, analizar_escena,
+listar_sugerencias, obtener_sugerencia, resumen_por_estado.
 """

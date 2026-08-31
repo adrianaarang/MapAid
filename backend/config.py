@@ -1,4 +1,4 @@
-"""Configuración leída del archivo .env.
+"""Configuración leída del .env.
 
-TODO (Gema): cargar las variables de .env.example con python-dotenv.
+TODO (Elena): cargar con python-dotenv todas las variables de .env.example.
 """

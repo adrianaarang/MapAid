@@ -1,0 +1,2 @@
+-- Ampliación para reportes de personas: origen, categoria, descripcion, reportado_por.
+-- TODO (Elena).

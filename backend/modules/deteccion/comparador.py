@@ -1,10 +1,8 @@
-"""Comparación de imágenes antes/después (la parte de IA).
+"""Comparación de imágenes antes/después usando el modelo entrenado.
 
-Recibe un par de imágenes de la misma zona y devuelve las regiones que
-han cambiado, con un nivel de confianza.
+Carga el modelo PyTorch de backend/ia/modelo_danos.pt y lo aplica a cada
+par de imágenes descargadas de Copernicus.
 
-Enfoque previsto: empezar por una comparación simple entre las dos
-imágenes y refinar si da tiempo. Documentar siempre qué NO detecta.
-
-TODO (Adriana).
+TODO (Adriana): cargar el modelo, recortar cada edificio, inferir nivel
+de daño y confianza. Documentar qué NO detecta.
 """

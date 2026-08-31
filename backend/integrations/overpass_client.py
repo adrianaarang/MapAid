@@ -1,10 +1,7 @@
 """Cliente de la Overpass API (OpenStreetMap).
 
-Descarga el estado del mapa ANTES del desastre para una zona: edificios
-y carreteras ya mapeados por la comunidad de OSM.
-
-Nota: si Overpass falla o tarda, no debe romper la app — se trabaja con
-lo ya descargado en data/.
+Descarga el mapa base (edificios y carreteras) de una zona, para usarlo
+como referencia antes del desastre.
 
 TODO (Elena).
 """

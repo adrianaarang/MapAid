@@ -1,7 +1,7 @@
 """Esquemas del módulo de validación.
 
-Estados de una sugerencia: pendiente -> confirmada | rechazada | corregida.
-Al rechazar se guarda el motivo, para poder revisar patrones de error.
+Acciones: confirmar / rechazar / corregir.
+Rechazar y corregir exigen motivo obligatorio.
 
 TODO (Gema).
 """

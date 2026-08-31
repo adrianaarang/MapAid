@@ -1,25 +1,24 @@
-# Arquitectura
+# Arquitectura de MapAid
 
 ## Flujo principal
 
-1. Se parte de un par de imágenes (antes / después) de una zona.
-2. El comparador (`modules/deteccion/comparador.py`) detecta regiones
-   que han cambiado y genera **sugerencias** en estado `pendiente`.
-3. Las sugerencias se pintan sobre el mapa de OpenStreetMap.
-4. Una persona revisa cada una: confirmar, rechazar o corregir.
-5. Solo las confirmadas cuentan como cambio real.
+1. Copernicus publica imágenes pre/post del desastre.
+2. La IA (pieza 1, modelo entrenado con xBD) detecta edificios dañados
+   → sugerencia PENDIENTE.
+3. Una persona describe lo que ve → la IA (pieza 2) cruza la descripción
+   con la imagen Copernicus → sugerencia PENDIENTE con campo "coherencia".
+4. Un revisor/a confirma, rechaza o corrige cada sugerencia.
+5. Solo las confirmadas aparecen en el mapa como cambio real.
 
-## Regla que no se salta
+## La regla que no se salta
 
-`routes.py` nunca habla directamente con `models.py`: siempre pasa por
-`services.py`. Así las reglas de negocio (sobre todo "nada se confirma
-sin persona") no se pueden esquivar por accidente.
+routes.py → services.py → models.py (nunca routes → models directamente).
+La IA nunca confirma sus propias sugerencias.
+Una sugerencia solo se puede revisar una vez (409 si ya revisada).
+Los reportes locales no pasan por la cola de validación.
 
 ## Convenciones
 
-- Nombres internos en inglés, contrato JSON de la API en español.
-- Consultas SQL siempre parametrizadas.
-- Una rama por persona: `feature/<modulo>/<nombre>`.
-- PR contra `dev`, con al menos una revisión antes de mergear.
-
-TODO: completar según vayamos decidiendo.
+- Nombres internos en inglés, contrato JSON público en español.
+- SQL siempre parametrizado.
+- Una rama por persona: feature/<modulo>/<nombre>, PR contra dev.

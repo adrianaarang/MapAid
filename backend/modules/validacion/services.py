@@ -1,7 +1,9 @@
 """Reglas de negocio de la validación humana.
 
-Regla principal: una sugerencia solo cuenta como confirmada si una
-persona la ha revisado. La IA nunca confirma sus propias sugerencias.
+Reglas:
+- Una sugerencia solo se puede revisar una vez (409 si ya revisada).
+- Los reportes locales (origen=persona) no se pueden validar aquí (409).
+- Rechazar y corregir exigen motivo.
 
 TODO (Gema).
 """

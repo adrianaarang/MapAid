@@ -1,6 +1,3 @@
-// Capa de conexión con el backend.
-//
-// Centraliza aquí todas las llamadas fetch (analizar, listar
-// sugerencias, validar) para no repartir URLs por todo el frontend.
-//
+// Capa de conexión con el backend de MapAid.
+// Todas las llamadas fetch centralizadas aquí.
 // TODO (Adriana).

@@ -1,5 +1,4 @@
-"""Conexión a SQLite y ejecución de migraciones.
+"""Conexión a SQLite y aplicación de migraciones.
 
-TODO (Elena): conexión, get_cursor(), e init_db() que aplique en orden
-los .sql de db/migrations/.
+TODO (Elena): _conectar(), get_cursor(), init_db().
 """

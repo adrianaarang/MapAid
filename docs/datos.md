@@ -1,27 +1,25 @@
 # Fuentes de datos
 
-Los datos NO se versionan en git (pesan demasiado). Cada persona los
-descarga en su máquina siguiendo estas instrucciones.
+## Copernicus Emergency Management Service (CEMS)
 
-## xBD / xView2 — imágenes antes/después
+Fuente principal de imágenes en producción. Publicaciones automáticas
+tras cada activación de emergencia, con pares pre/post georreferenciados.
 
-Pares de imágenes de satélite de desastres reales, con daños etiquetados.
-Requiere registro gratuito en la web de xView2.
+Registro gratuito: https://dataspace.copernicus.eu
+Credenciales → backend/.env (variables COPERNICUS_USER y COPERNICUS_PASSWORD).
 
-Descargar en: `data/raw/xbd/`
+## xBD / xView2
 
-TODO (Elena): añadir el enlace exacto y qué subconjunto usamos (con todo
-el dataset no cabe; elegir uno o dos desastres concretos).
+Se usa SOLO para entrenamiento y evaluación del modelo, no como fuente
+de imágenes en producción.
 
-## OpenStreetMap — mapa base (Overpass API)
+Descarga: https://xview2.org (registro gratuito, aceptar licencia).
+Colocar en data/raw/xbd/images/ y data/raw/xbd/labels/.
+Solo hace falta el subconjunto train para entrenar; test/hold para evaluar.
 
-Estado del terreno antes del desastre: edificios y carreteras ya
-mapeados. Se descarga por zona con la Overpass API.
+Ver backend/ia/README_COLAB.md para instrucciones de entrenamiento.
 
-TODO (Elena): documentar la consulta Overpass que usamos y la zona
-elegida.
+## OpenStreetMap (Overpass API)
 
-## Atribución obligatoria
-
-OpenStreetMap exige mostrar la atribución en el mapa:
-`© OpenStreetMap contributors`. No quitarla.
+Mapa base: edificios y carreteras antes del desastre.
+Atribución obligatoria en el mapa: © OpenStreetMap contributors.

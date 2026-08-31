@@ -1,10 +1,3 @@
 -- Esquema inicial de MapAid.
---
--- Tablas previstas:
---   sugerencias  -> cambios detectados por la IA, con su estado
---   validaciones -> quién revisó qué y cuándo (trazabilidad)
---
--- OJO: el script de migraciones parte los archivos por ';', así que no
--- escribas puntos y coma dentro de los comentarios.
---
--- TODO (Elena).
+-- TODO (Elena): tablas sugerencias y validaciones.
+-- OJO: el script parte los archivos por punto y coma — no usarlos en comentarios.
