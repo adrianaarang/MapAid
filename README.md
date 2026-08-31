@@ -1,7 +1,5 @@
 # MapAid — Mapear para ayudar
 
-Reto 2 — Humanitarian OpenStreetMap Team (HOT)
-
 Tras una emergencia el territorio cambia, pero el mapa oficial tarda en
 reflejarlo. MapAid compara imágenes de satélite de antes y después del
 desastre, sugiere qué ha cambiado (edificios dañados, carreteras cortadas,
