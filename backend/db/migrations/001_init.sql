@@ -1,0 +1,10 @@
+-- Esquema inicial de MapAid.
+--
+-- Tablas previstas:
+--   sugerencias  -> cambios detectados por la IA, con su estado
+--   validaciones -> quién revisó qué y cuándo (trazabilidad)
+--
+-- OJO: el script de migraciones parte los archivos por ';', así que no
+-- escribas puntos y coma dentro de los comentarios.
+--
+-- TODO (Elena).

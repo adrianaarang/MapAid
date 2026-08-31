@@ -1,0 +1,14 @@
+/* Variables de marca de MapAid.
+   Colores tomados del logo. No usar colores sueltos fuera de aquí. */
+:root {
+  --mapaid-navy: #092E4E;
+  --mapaid-coral: #FA4531;
+  --mapaid-teal: #1F9E7A;
+
+  /* Estados de una sugerencia */
+  --estado-pendiente: #BA7517;
+  --estado-confirmado: #639922;
+  --estado-rechazado: #C0392B;
+
+  /* TODO (Josema/Helen): fondos, bordes, tipografía y espaciados */
+}

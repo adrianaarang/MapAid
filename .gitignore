@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Base de datos local (cada persona tiene la suya)
+*.db
+*.db.bak
+*.db.backup
+
+# Entorno
+.env
+
+# Datos descargados / generados: pesan mucho, no se versionan.
+# Ver docs/datos.md para saber de dónde bajarlos.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
