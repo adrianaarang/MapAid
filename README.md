@@ -1,7 +1,5 @@
 # MapAid — Mapear para ayudar
 
-Reto 2 — Humanitarian OpenStreetMap Team (HOT)
-
 Una IA entrenada con xBD compara imágenes de Copernicus antes/después
 de un desastre y sugiere qué ha cambiado. Las personas sobre el terreno
 también pueden reportar lo que ven: la IA cruza su descripción con las
