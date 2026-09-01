@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MapAid — Reportar incidencia</title>
+  <link rel="icon" href="../assets/logo-mapaid-pin.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:  #092E4E;
+      --coral: #FA4531;
+      --teal:  #1F9E7A;
+      --amber: #BA7517;
+      --bg:    #F0EEE8;
+      --white: #FFFFFF;
+      --border:#D8D5CC;
+      --text:  #1A1A18;
+      --muted: #6B6960;
+    }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px 48px;
+    }
+    .caja {
+      width: 100%;
+      max-width: 480px;
+      background: var(--white);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .caja__cabecera {
+      background: var(--navy);
+      padding: 20px 24px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .caja__cabecera img { height: 36px; }
+    .caja__cabecera__nombre {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.02em;
+    }
+    .caja__cabecera__lema {
+      font-size: 11px;
+      color: rgba(255,255,255,0.65);
+    }
+    .caja__cuerpo { padding: 24px; }
+    h1 {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .subtitulo {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .campo { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .campo label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .campo select,
+    .campo input,
+    .campo textarea {
+      font: inherit;
+      font-size: 14px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
+      color: var(--text);
+      width: 100%;
+    }
+    .campo select:focus,
+    .campo input:focus,
+    .campo textarea:focus {
+      outline: none;
+      border-color: var(--teal);
+      background: var(--white);
+    }
+    .campo textarea { resize: vertical; min-height: 80px; }
+    .categorias {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .cat-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      cursor: pointer;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      transition: all 0.14s;
+    }
+    .cat-btn__emoji { font-size: 22px; }
+    .cat-btn.is-active {
+      border-color: var(--teal);
+      background: rgba(31,158,122,0.08);
+      color: var(--teal);
+    }
+    .ubicacion-opciones {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .btn-ubicacion {
+      flex: 1;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.14s;
+    }
+    .btn-ubicacion:hover { border-color: var(--navy); }
+    .btn-ubicacion.is-active { border-color: var(--teal); color: var(--teal); background: rgba(31,158,122,0.06); }
+    .ubicacion-estado {
+      font-size: 11px;
+      color: var(--teal);
+      min-height: 16px;
+      margin-top: 4px;
+    }
+    .btn-enviar {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: var(--coral);
+      color: var(--white);
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.14s;
+      letter-spacing: -0.01em;
+    }
+    .btn-enviar:hover { opacity: 0.88; }
+    .btn-enviar:disabled { opacity: 0.5; cursor: default; }
+    .aviso-error {
+      color: var(--coral);
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 18px;
+    }
+    /* Pantalla de éxito */
+    .exito {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 40px 24px;
+      gap: 12px;
+    }
+    .exito__icono {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(31,158,122,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    .exito__titulo { font-size: 19px; font-weight: 700; color: var(--navy); }
+    .exito__texto { font-size: 13px; color: var(--muted); max-width: 320px; line-height: 1.6; }
+    .btn-otro {
+      margin-top: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border: 1.5px solid var(--navy);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--navy);
+      cursor: pointer;
+    }
+    .aviso-anonimo {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      border-left: 3px solid var(--teal);
+    }
+  </style>
+</head>
+<body>
+<div class="caja">
+  <div class="caja__cabecera">
+    <img src="../assets/logo-mapaid-pin.png" alt="MapAid" />
+    <div>
+      <div class="caja__cabecera__nombre">MapAid</div>
+      <div class="caja__cabecera__lema">Mapear para ayudar</div>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <div class="caja__cuerpo" id="vista-form">
+    <h1>¿Qué has visto?</h1>
+    <p class="subtitulo">Tu aviso ayuda a los cooperantes a llegar de forma segura. No hace falta registrarse.</p>
+
+    <form id="form-publico">
+      <div class="campo">
+        <label>¿Qué tipo de incidencia?</label>
+        <div class="categorias" id="categorias">
+          <button type="button" class="cat-btn is-active" data-valor="dano">
+            <span class="cat-btn__emoji">🏚️</span>Daño
+          </button>
+          <button type="button" class="cat-btn" data-valor="recurso">
+            <span class="cat-btn__emoji">💧</span>Recurso
+          </button>
+          <button type="button" class="cat-btn" data-valor="acceso">
+            <span class="cat-btn__emoji">🚧</span>Acceso bloqueado
+          </button>
+        </div>
+      </div>
+
+      <div class="campo" id="grupo-nivel" style="display:none">
+        <label for="nivel-dano">Nivel de daño</label>
+        <select id="nivel-dano">
+          <option value="minor-damage">Daño parcial</option>
+          <option value="major-damage">Daño grave</option>
+          <option value="destroyed" selected>Destruido / derrumbado</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label for="descripcion">Describe lo que ves <span style="color:var(--coral)">*</span></label>
+        <textarea id="descripcion" required
+          placeholder="Ej: El edificio de la esquina se ha derrumbado, hay escombros en la calle..."></textarea>
+      </div>
+
+      <div class="campo">
+        <label>¿Dónde está?</label>
+        <div class="ubicacion-opciones">
+          <button type="button" class="btn-ubicacion" id="btn-gps">📍 Usar mi ubicación</button>
+          <button type="button" class="btn-ubicacion" id="btn-dir">🏠 Escribir dirección</button>
+        </div>
+        <div class="ubicacion-estado" id="ubic-estado"></div>
+        <input type="text" id="input-dir" placeholder="Calle, número, ciudad..."
+          style="display:none; margin-top:6px" />
+      </div>
+
+      <div class="campo">
+        <label for="nombre">Tu nombre (opcional)</label>
+        <input type="text" id="nombre" placeholder="Anónimo/a" />
+      </div>
+
+      <button type="submit" class="btn-enviar" id="btn-enviar">Enviar aviso</button>
+      <p class="aviso-error" id="error-msg" role="alert"></p>
+    </form>
+
+    <div class="aviso-anonimo">
+      No guardamos datos personales. Tu aviso se revisa antes de publicarse en el mapa.
+    </div>
+  </div>
+
+  <!-- Pantalla de éxito -->
+  <div class="exito" id="vista-exito">
+    <div class="exito__icono">✅</div>
+    <div class="exito__titulo">¡Gracias por tu aviso!</div>
+    <p class="exito__texto">
+      Lo hemos recibido. Un equipo lo revisará antes de publicarlo en el mapa
+      para que nuestros cooperantes puedan llegar de forma segura.
+    </p>
+    <p id="exito-coherencia" style="display:none;font-size:12px;color:#2E7D32;
+       background:rgba(46,125,50,0.08);border-radius:8px;padding:10px 12px;
+       max-width:320px;text-align:left;line-height:1.5"></p>
+    <button class="btn-otro" id="btn-otro">Reportar otra incidencia</button>
+  </div>
+</div>
+
+<script type="module">
+const BASE = "http://localhost:8000/api";
+const ESCENA_PUBLICA = "publica";
+
+let _categoria = "dano";
+let _lat = null, _lng = null;
+
+// Categorías
+document.getElementById("categorias").addEventListener("click", e => {
+  const btn = e.target.closest(".cat-btn");
+  if (!btn) return;
+  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("is-active"));
+  btn.classList.add("is-active");
+  _categoria = btn.dataset.valor;
+  document.getElementById("grupo-nivel").style.display =
+    _categoria === "dano" ? "flex" : "none";
+});
+
+// GPS
+document.getElementById("btn-gps").addEventListener("click", () => {
+  const estado = document.getElementById("ubic-estado");
+  const btn = document.getElementById("btn-gps");
+  btn.textContent = "Obteniendo…";
+  estado.textContent = "";
+  if (!navigator.geolocation) {
+    estado.textContent = "Tu navegador no soporta geolocalización.";
+    btn.textContent = "📍 Usar mi ubicación";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      _lat = pos.coords.latitude;
+      _lng = pos.coords.longitude;
+      estado.textContent = `Ubicación obtenida (${_lat.toFixed(4)}, ${_lng.toFixed(4)})`;
+      btn.textContent = "📍 Ubicación marcada";
+      btn.classList.add("is-active");
+      document.getElementById("btn-dir").classList.remove("is-active");
+      document.getElementById("input-dir").style.display = "none";
+    },
+    () => {
+      estado.textContent = "No se pudo obtener la ubicación. Escribe la dirección.";
+      btn.textContent = "📍 Usar mi ubicación";
+    }
+  );
+});
+
+// Dirección
+document.getElementById("btn-dir").addEventListener("click", () => {
+  const input = document.getElementById("input-dir");
+  input.style.display = input.style.display === "none" ? "block" : "none";
+  document.getElementById("btn-dir").classList.toggle("is-active");
+  document.getElementById("btn-gps").classList.remove("is-active");
+  _lat = _lng = null;
+  document.getElementById("ubic-estado").textContent = "";
+});
+
+// Geocodificar dirección antes de enviar
+async function geocodificar(direccion) {
+  try {
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=1`,
+      { headers: { "Accept-Language": "es" } }
+    );
+    const datos = await r.json();
+    if (datos.length) {
+      return { lat: parseFloat(datos[0].lat), lng: parseFloat(datos[0].lon),
+               direccion: datos[0].display_name };
+    }
+  } catch {}
+  return null;
+}
+
+// Enviar
+document.getElementById("form-publico").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = document.getElementById("error-msg");
+  const btn = document.getElementById("btn-enviar");
+  err.textContent = "";
+
+  const desc = document.getElementById("descripcion").value.trim();
+  if (!desc) { err.textContent = "Escribe una descripción antes de enviar."; return; }
+
+  const dir = document.getElementById("input-dir").value.trim();
+  let lat = _lat, lng = _lng, direccionFinal = dir;
+
+  if (!lat && !lng) {
+    if (!dir) {
+      err.textContent = "Indica dónde está: usa el GPS o escribe la dirección.";
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = "Buscando dirección…";
+    const geo = await geocodificar(dir);
+    if (!geo) {
+      err.textContent = "No se encontró esa dirección. Prueba con más detalle.";
+      btn.disabled = false;
+      btn.textContent = "Enviar aviso";
+      return;
+    }
+    lat = geo.lat; lng = geo.lng; direccionFinal = geo.direccion;
+  }
+
+  const payload = {
+    escena: ESCENA_PUBLICA,
+    categoria: _categoria,
+    latitud: lat,
+    longitud: lng,
+    descripcion: desc,
+    reportado_por: document.getElementById("nombre").value.trim() || "vecino/a anónimo",
+  };
+  if (_categoria === "dano") payload.dano = document.getElementById("nivel-dano").value;
+
+  btn.disabled = true;
+  btn.textContent = "Enviando…";
+
+  try {
+    const r = await fetch(`${BASE}/reportes/publico`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const data = await r.json();
+      throw new Error(data.detail || data.error || `Error ${r.status}`);
+    }
+    const resultado = await r.json();
+    // Guardar la coherencia para mostrarla en la pantalla de éxito
+    if (resultado.coherencia && resultado.coherencia !== "no_detectable") {
+      const iconos = { coherente:"✅", posible:"⚠️" };
+      const msg = document.getElementById("exito-coherencia");
+      if (msg) {
+        msg.textContent = `${iconos[resultado.coherencia] || ""} ${resultado.coherencia_explicacion}`;
+        msg.style.display = "block";
+      }
+    }
+    document.getElementById("vista-form").style.display = "none";
+    document.getElementById("vista-exito").style.display = "flex";
+  } catch (error) {
+    err.textContent = `No se pudo enviar: ${error.message}`;
+    btn.disabled = false;
+    btn.textContent = "Enviar aviso";
+  }
+});
+
+// Otra incidencia
+document.getElementById("btn-otro").addEventListener("click", () => {
+  document.getElementById("form-publico").reset();
+  document.querySelectorAll(".cat-btn").forEach((b,i) => b.classList.toggle("is-active", i===0));
+  _categoria = "dano"; _lat = _lng = null;
+  document.getElementById("grupo-nivel").style.display = "none";
+  document.getElementById("input-dir").style.display = "none";
+  document.getElementById("ubic-estado").textContent = "";
+  document.getElementById("btn-gps").textContent = "📍 Usar mi ubicación";
+  document.getElementById("btn-gps").classList.remove("is-active");
+  document.getElementById("btn-dir").classList.remove("is-active");
+  document.getElementById("vista-exito").style.display = "none";
+  document.getElementById("vista-form").style.display = "block";
+});
+</script>
+</body>
+</html>

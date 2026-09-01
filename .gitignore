@@ -12,11 +12,12 @@ venv/
 # Entorno
 .env
 
-# Datos descargados / generados: pesan mucho, no se versionan.
-# Ver docs/datos.md para saber de dónde bajarlos.
+# Datos descargados: pesan mucho y se bajan aparte (ver docs/datos.md).
+# Las escenas de ejemplo de data/raw/xbd SÍ se versionan, para que el
+# proyecto arranque sin descargar nada.
 data/raw/*
+!data/raw/xbd/
 data/processed/*
-!data/raw/.gitkeep
 !data/processed/.gitkeep
 
 # Logs

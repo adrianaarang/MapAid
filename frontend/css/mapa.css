@@ -1,1 +1,220 @@
-/* Pantalla del mapa y panel de validación. TODO (Helen + Josema). */
+/* Pantalla del mapa: mapa a la izquierda, cola de validación a la derecha. */
+main {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  height: calc(100vh - 52px);
+}
+
+#map { width: 100%; height: 100%; }
+
+/* ---------- Panel de validación ---------- */
+#panel-validacion {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  overflow-y: auto;
+  padding: var(--space);
+}
+
+.panel__titulo {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.panel__aviso {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--space);
+}
+
+.panel__controles {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space);
+}
+
+.panel__controles select { flex: 1; }
+
+/* ---------- Resumen ---------- */
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: var(--space);
+}
+
+.resumen__dato {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.resumen__numero { display: block; font-size: 1.1rem; font-weight: 700; }
+.resumen__etiqueta { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
+
+.resumen__dato--pendiente .resumen__numero { color: var(--estado-pendiente); }
+.resumen__dato--confirmada .resumen__numero { color: var(--estado-confirmada); }
+.resumen__dato--rechazada .resumen__numero { color: var(--estado-rechazada); }
+.resumen__dato--corregida .resumen__numero { color: var(--estado-corregida); }
+
+/* ---------- Tarjeta de validación ---------- */
+.tarjeta {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--estado-pendiente);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 10px;
+  background: var(--surface);
+}
+
+.tarjeta.is-seleccionada {
+  border-color: var(--mapaid-navy);
+  border-left-color: var(--mapaid-coral);
+  box-shadow: 0 0 0 2px rgba(9, 46, 78, 0.08);
+}
+
+.tarjeta__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tarjeta__dano { font-weight: 700; font-size: 0.9rem; }
+.tarjeta__dano--minor-damage { color: var(--dano-menor); }
+.tarjeta__dano--major-damage { color: var(--dano-mayor); }
+.tarjeta__dano--destroyed { color: var(--dano-destruido); }
+
+.tarjeta__confianza {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+/* Recordatorio permanente de que esto NO está confirmado. */
+.tarjeta__sugerencia {
+  font-size: 0.7rem;
+  color: var(--estado-pendiente);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.tarjeta__imagenes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+.tarjeta__imagen { position: relative; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--bg); }
+.tarjeta__imagen img { display: block; width: 100%; height: 90px; object-fit: cover; }
+.tarjeta__imagen figcaption {
+  position: absolute; top: 0; left: 0;
+  background: rgba(9, 46, 78, 0.75); color: #fff;
+  font-size: 0.62rem; padding: 1px 5px; text-transform: uppercase;
+}
+
+.tarjeta__meta { font-size: 0.72rem; color: var(--text-muted); margin: 0 0 8px; }
+
+.tarjeta__acciones { display: flex; gap: 6px; }
+.tarjeta__acciones button { flex: 1; font-size: 0.78rem; padding: 6px 4px; }
+
+.btn-aceptar { border-color: var(--estado-confirmada); color: var(--estado-confirmada); }
+.btn-aceptar:hover { background: var(--estado-confirmada); color: #fff; }
+.btn-rechazar { border-color: var(--estado-rechazada); color: var(--estado-rechazada); }
+.btn-rechazar:hover { background: var(--estado-rechazada); color: #fff; }
+.btn-editar { border-color: var(--estado-corregida); color: var(--estado-corregida); }
+.btn-editar:hover { background: var(--estado-corregida); color: #fff; }
+
+/* ---------- Estados de la lista ---------- */
+.estado-lista { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: var(--space); }
+.estado-lista--error { color: var(--estado-rechazada); }
+
+/* ---------- Marcadores del mapa ---------- */
+.marcador {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+.marcador--pendiente { background: var(--estado-pendiente); }
+.marcador--confirmada { background: var(--estado-confirmada); }
+.marcador--rechazada { background: var(--estado-rechazada); }
+.marcador--corregida { background: var(--estado-corregida); }
+.marcador.is-seleccionado { transform: scale(1.5); }
+
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 50vh 1fr; height: auto; }
+  #panel-validacion { border-left: none; border-top: 1px solid var(--border); }
+}
+
+/* ---------- Recuento por origen (cabecera) ---------- */
+.origen {
+  display: flex;
+  gap: 16px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Bloque de reporte local ---------- */
+.bloque-reporte {
+  border: 1px solid var(--mapaid-teal);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: var(--space);
+  background: rgba(31, 158, 122, 0.05);
+}
+
+.btn-reportar {
+  width: 100%;
+  border-color: var(--mapaid-teal);
+  color: var(--mapaid-teal);
+  font-weight: 600;
+}
+
+.btn-reportar:hover { background: var(--mapaid-teal); color: #fff; }
+
+#form-reporte { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+#form-reporte label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+#form-reporte select,
+#form-reporte input,
+#form-reporte textarea { width: 100%; font-size: 0.85rem; }
+
+.reporte__aviso {
+  font-size: 0.75rem;
+  color: var(--mapaid-teal);
+  margin: 0 0 4px;
+  min-height: 1em;
+}
+
+.reporte__acciones { display: flex; gap: 6px; margin-top: 8px; }
+.reporte__acciones button { flex: 1; font-size: 0.8rem; }
+.btn-publicar-reporte {
+  background: var(--mapaid-teal);
+  border-color: var(--mapaid-teal);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------- Marcadores de reportes locales ---------- */
+/* Cuadrados en vez de círculos: la forma distingue el origen sin
+   depender solo del color. */
+.marcador--reporte {
+  border-radius: 3px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+}
+
+.marcador--dano { background: var(--dano-destruido); }
+.marcador--recurso { background: var(--mapaid-teal); }
+.marcador--acceso { background: var(--mapaid-navy); }
+
+.marcador-provisional {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px dashed var(--mapaid-teal);
+  background: rgba(31, 158, 122, 0.2);
+}
