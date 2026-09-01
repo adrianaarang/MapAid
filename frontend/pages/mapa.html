@@ -1,1074 +1,1334 @@
-<!DOCTYPE html>
+<!-- Interfaz de Usuario Principal (SPA) 
+Con control de Acceso Basado en Roles (RBAC) 
+Doble fuente de datos: Maneja tanto detecciones automatizadas por visión
+por computador (IA) como avisos de la ciudadanía (personas/vecinos) -->
+
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MapAid</title>
-  <link rel="icon" href="../assets/logo-mapaid-pin.png" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --navy:  #092E4E;
-      --coral: #FA4531;
-      --teal:  #1F9E7A;
-      --amber: #BA7517;
-      --green: #2E7D32;
-      --red:   #C0392B;
-      --purple:#6A4FB6;
-      --bg:    #F0EEE8;
-      --white: #FFFFFF;
-      --border:#D8D5CC;
-      --text:  #1A1A18;
-      --muted: #6B6960;
-      --panel: #FAFAF7;
-    }
-
-    body {
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    /* ===== LOGIN ===== */
-    #vista-login {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: var(--navy);
-    }
-
-    .login-box {
-      width: 100%;
-      max-width: 380px;
-      background: var(--white);
-      border-radius: 16px;
-      padding: 36px 32px;
-    }
-
-    .login-marca {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 28px;
-    }
-
-    .login-marca img { height: 40px; }
-
-    .login-marca__nombre {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: -0.02em;
-    }
-
-    .login-marca__lema {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .campo {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 14px;
-    }
-
-    .campo label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--muted);
-    }
-
-    .campo input {
-      padding: 10px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      font: inherit;
-      font-size: 14px;
-      background: var(--bg);
-      transition: border-color 0.15s;
-      width: 100%;
-    }
-
-    .campo input:focus {
-      outline: none;
-      border-color: var(--navy);
-      background: var(--white);
-    }
-
-    .btn-login {
-      width: 100%;
-      padding: 11px;
-      border: none;
-      border-radius: 8px;
-      background: var(--navy);
-      color: var(--white);
-      font: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 4px;
-      transition: opacity 0.15s;
-    }
-
-    .btn-login:hover { opacity: 0.88; }
-    .btn-login:disabled { opacity: 0.5; cursor: default; }
-
-    .login-error {
-      color: var(--red);
-      font-size: 12px;
-      margin-top: 10px;
-      min-height: 18px;
-    }
-
-    .login-aviso {
-      margin-top: 20px;
-      padding: 10px 12px;
-      background: var(--bg);
-      border-radius: 8px;
-      font-size: 11px;
-      color: var(--muted);
-      border-left: 3px solid var(--border);
-    }
-
-    /* ===== APP ===== */
-    #vista-app { display: none; height: 100vh; flex-direction: column; }
-
-    /* Cabecera */
-    .cabecera {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      height: 48px;
-      background: var(--navy);
-      color: var(--white);
-      flex-shrink: 0;
-    }
-
-    .cabecera__marca {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      font-size: 15px;
-    }
-
-    .cabecera__marca img { height: 24px; }
-
-    .cabecera__rol {
-      font-size: 11px;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-weight: 500;
-      opacity: 0.9;
-    }
-
-    .cabecera__rol--cooperante { background: rgba(31,158,122,0.3); }
-    .cabecera__rol--administradora { background: rgba(250,69,49,0.35); }
-
-    .cabecera__derecha {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .cabecera__usuario { font-size: 12px; opacity: 0.75; }
-
-    .btn-salir {
-      font: inherit;
-      font-size: 12px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: var(--white);
-      padding: 4px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .btn-salir:hover { background: rgba(255,255,255,0.2); }
-
-    /* Contador origen */
-    .origen-bar {
-      display: flex;
-      gap: 16px;
-      padding: 4px 16px;
-      background: rgba(9,46,78,0.92);
-      font-size: 11px;
-      color: rgba(255,255,255,0.75);
-      flex-shrink: 0;
-    }
-
-    /* Layout principal */
-    .layout {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    @media (max-width: 768px) {
-      .layout { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
-    }
-
-    /* Panel lateral */
-    .panel {
-      background: var(--panel);
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .panel__seccion {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .panel__titulo {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    /* Selector de escena */
-    .escena-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .escena-controls select {
-      font: inherit;
-      font-size: 12px;
-      padding: 7px 10px;
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      background: var(--white);
-      width: 100%;
-      color: var(--text);
-    }
-
-    .btn-analizar {
-      font: inherit;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 7px 12px;
-      border: 1.5px solid var(--navy);
-      border-radius: 7px;
-      background: var(--white);
-      color: var(--navy);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-analizar:hover { background: var(--navy); color: var(--white); }
-    .btn-analizar:disabled { opacity: 0.5; cursor: default; }
-
-    /* Resumen */
-    .resumen {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
-    }
-
-    .resumen__dato {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: 7px 5px;
-      text-align: center;
-    }
-
-    .resumen__num {
-      display: block;
-      font-size: 16px;
-      font-weight: 700;
-    }
-
-    .resumen__label {
-      font-size: 9px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .resumen__dato--pendiente .resumen__num { color: var(--amber); }
-    .resumen__dato--confirmada .resumen__num { color: var(--green); }
-    .resumen__dato--rechazada .resumen__num { color: var(--red); }
-    .resumen__dato--corregida .resumen__num { color: var(--purple); }
-
-    /* Bloque reporte */
-    .bloque-reporte {
-      background: rgba(31,158,122,0.05);
-      border: 1px solid rgba(31,158,122,0.25);
-      border-radius: 10px;
-      padding: 12px;
-    }
-
-    .btn-reportar {
-      width: 100%;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 8px 12px;
-      border: 1.5px solid var(--teal);
-      border-radius: 7px;
-      background: var(--white);
-      color: var(--teal);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-reportar:hover { background: var(--teal); color: var(--white); }
-
-    .form-reporte {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-reporte label {
-      font-size: 11px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .form-reporte select,
-    .form-reporte textarea,
-    .form-reporte input[type="text"] {
-      font: inherit;
-      font-size: 12px;
-      padding: 7px 10px;
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      background: var(--white);
-      width: 100%;
-    }
-
-    .form-reporte textarea { resize: vertical; min-height: 56px; }
-
-    .reporte-aviso {
-      font-size: 11px;
-      color: var(--teal);
-      min-height: 16px;
-    }
-
-    .reporte-acciones {
-      display: flex;
-      gap: 6px;
-      margin-top: 2px;
-    }
-
-    .btn-cancelar-reporte {
-      flex: 1;
-      font: inherit;
-      font-size: 12px;
-      padding: 7px;
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      background: var(--white);
-      cursor: pointer;
-    }
-
-    .btn-publicar-reporte {
-      flex: 1;
-      font: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 7px;
-      border: none;
-      border-radius: 7px;
-      background: var(--teal);
-      color: var(--white);
-      cursor: pointer;
-    }
-
-    /* Tarjeta de validación */
-    .tarjeta {
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--amber);
-      border-radius: 8px;
-      padding: 10px;
-      margin-bottom: 8px;
-      background: var(--white);
-      cursor: pointer;
-      transition: box-shadow 0.12s;
-    }
-
-    .tarjeta:hover { box-shadow: 0 2px 8px rgba(9,46,78,0.08); }
-
-    .tarjeta.is-seleccionada {
-      border-left-color: var(--coral);
-      box-shadow: 0 0 0 2px rgba(250,69,49,0.15);
-    }
-
-    .tarjeta__aviso {
-      font-size: 9px;
-      font-weight: 600;
-      color: var(--amber);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 5px;
-    }
-
-    .tarjeta__cabecera {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 7px;
-    }
-
-    .tarjeta__dano {
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .tarjeta__dano--minor-damage { color: var(--amber); }
-    .tarjeta__dano--major-damage { color: #D4650A; }
-    .tarjeta__dano--destroyed { color: var(--red); }
-
-    .tarjeta__confianza {
-      font-size: 10px;
-      color: var(--muted);
-      background: var(--bg);
-      padding: 2px 7px;
-      border-radius: 20px;
-    }
-
-    .tarjeta__imagenes {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5px;
-      margin-bottom: 7px;
-    }
-
-    .tarjeta__img-wrap {
-      position: relative;
-      border-radius: 5px;
-      overflow: hidden;
-      background: var(--bg);
-    }
-
-    .tarjeta__img-wrap img {
-      display: block;
-      width: 100%;
-      height: 72px;
-      object-fit: cover;
-    }
-
-    .tarjeta__img-label {
-      position: absolute;
-      top: 0;
-      left: 0;
-      font-size: 9px;
-      padding: 1px 5px;
-      font-weight: 600;
-    }
-
-    .tarjeta__img-label--antes {
-      background: var(--navy);
-      color: var(--white);
-    }
-
-    .tarjeta__img-label--despues {
-      background: var(--coral);
-      color: var(--white);
-    }
-
-    .tarjeta__meta {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-
-    .tarjeta__acciones {
-      display: flex;
-      gap: 5px;
-    }
-
-    .tarjeta__acciones button {
-      flex: 1;
-      font: inherit;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 5px 4px;
-      border-radius: 6px;
-      cursor: pointer;
-      border: 1.5px solid;
-      background: var(--white);
-      transition: all 0.12s;
-    }
-
-    .btn-aceptar { border-color: var(--green); color: var(--green); }
-    .btn-aceptar:hover { background: var(--green); color: var(--white); }
-    .btn-rechazar { border-color: var(--red); color: var(--red); }
-    .btn-rechazar:hover { background: var(--red); color: var(--white); }
-    .btn-editar { border-color: var(--purple); color: var(--purple); }
-    .btn-editar:hover { background: var(--purple); color: var(--white); }
-
-    /* Estados vacío/cargando */
-    .estado-lista {
-      padding: 16px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .estado-lista--error { color: var(--red); }
-
-    /* Mapa */
-    #map { width: 100%; height: 100%; }
-
-    /* Marcadores */
-    .marcador {
-      width: 13px; height: 13px;
-      border-radius: 50%;
-      border: 2px solid var(--white);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    }
-
-    .marcador--pendiente { background: var(--amber); }
-    .marcador--confirmada { background: var(--green); }
-    .marcador--rechazada { background: var(--red); }
-    .marcador--corregida { background: var(--purple); }
-
-    .marcador--reporte {
-      border-radius: 3px;
-      width: 14px;
-      height: 14px;
-      border: 2.5px solid var(--white);
-    }
-
-    .marcador--dano { background: var(--red); }
-    .marcador--recurso { background: var(--teal); }
-    .marcador--acceso { background: var(--navy); }
-
-    .marcador-provisional {
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      border: 2.5px dashed var(--teal);
-      background: rgba(31,158,122,0.18);
-    }
-
-    /* Tarjeta de activación Copernicus */
-    .activacion {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--navy);
-      border-radius: 8px;
-      padding: 9px 10px;
-      margin-bottom: 6px;
-    }
-
-    .activacion__codigo {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--navy);
-      letter-spacing: 0.04em;
-    }
-
-    .activacion__titulo {
-      font-size: 12px;
-      font-weight: 500;
-      margin: 2px 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .activacion__meta {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    .btn-usar-activacion {
-      font: inherit;
-      font-size: 11px;
-      padding: 4px 10px;
-      border: 1px solid var(--navy);
-      border-radius: 6px;
-      background: var(--white);
-      color: var(--navy);
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.12s;
-    }
-
-    .btn-usar-activacion:hover {
-      background: var(--navy);
-      color: var(--white);
-    }
-
-    /* Ocultar */
-    .hidden { display: none !important; }
-  </style>
-</head>
-<body>
-
-<!-- ===== PANTALLA LOGIN ===== -->
-<div id="vista-login">
-  <div class="login-box">
-    <div class="login-marca">
-      <img src="../assets/logo-mapaid-pin.png" alt="MapAid logo" />
-      <div>
-        <div class="login-marca__nombre">MapAid</div>
-        <div class="login-marca__lema">Mapear para ayudar</div>
-      </div>
-    </div>
-
-    <form id="form-login">
-      <div class="campo">
-        <label for="login-email">Correo</label>
-        <input id="login-email" type="email" placeholder="nombre@mapaid.com" required autocomplete="email" />
-      </div>
-      <div class="campo">
-        <label for="login-pass">Contraseña</label>
-        <input id="login-pass" type="password" placeholder="••••••••" required autocomplete="current-password" />
-      </div>
-      <button type="submit" class="btn-login" id="btn-entrar">Entrar</button>
-      <p class="login-error" id="login-error" role="alert"></p>
-    </form>
-
-    <div class="login-aviso">
-      No hay registro público. Las cuentas las gestiona la administradora.
-    </div>
-    <p style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">
-      ¿Eres vecino/a y quieres reportar algo que has visto?<br>
-      <a href="reporte-publico.html" style="color:var(--navy);font-weight:600">
-        Enviar aviso sin cuenta →
-      </a>
-    </p>
-  </div>
-</div>
-
-<!-- ===== PANTALLA APP ===== -->
-<div id="vista-app">
-
-  <header class="cabecera">
-    <div class="cabecera__marca">
-      <img src="../assets/logo-mapaid-pin.png" alt="" />
-      MapAid
-      <span class="cabecera__rol" id="badge-rol"></span>
-    </div>
-    <div class="cabecera__derecha">
-      <span class="cabecera__usuario" id="label-usuario"></span>
-      <button class="btn-salir" id="btn-salir">Salir</button>
-    </div>
-  </header>
-
-  <div class="origen-bar" id="origen-bar">
-    <span>
-      <a href="reporte-publico.html" target="_blank"
-        style="color:rgba(255,255,255,0.7);text-decoration:underline;font-size:11px">
-        🔗 Enlace para vecinos (sin login)
-      </a>
-    </span>
-  </div>
-
-  <div class="layout">
-
-    <!-- Panel lateral -->
-    <aside class="panel">
-
-      <!-- Activaciones Copernicus (solo administradora) -->
-      <div class="panel__seccion" id="seccion-copernicus">
-        <p class="panel__titulo">Activaciones Copernicus</p>
-        <div id="lista-activaciones">
-          <p class="estado-lista" style="padding:8px 0">Cargando activaciones…</p>
-        </div>
-      </div>
-
-      <!-- Selector de escena -->
-      <div class="panel__seccion">
-        <p class="panel__titulo">Escena activa</p>
-        <div class="escena-controls">
-          <select id="selector-escena" aria-label="Seleccionar escena"></select>
-          <button class="btn-analizar" id="btn-analizar">Analizar escena</button>
-        </div>
-      </div>
-
-      <!-- Resumen -->
-      <div class="panel__seccion">
-        <p class="panel__titulo">Estado del mapa</p>
-        <div class="resumen" id="resumen"></div>
-      </div>
-
-      <!-- Reporte local (todos los roles) -->
-      <div class="panel__seccion">
-        <p class="panel__titulo">Conocimiento local</p>
-        <div class="bloque-reporte">
-          <p style="font-size:11px;color:var(--muted);margin-bottom:8px">
-            ¿Ves algo que el satélite no detectó? Repórtalo aquí.
-          </p>
-          <button class="btn-reportar" id="btn-reportar">+ Reportar lo que veo</button>
-          <form class="form-reporte hidden" id="form-reporte">
-            <p class="reporte-aviso" id="reporte-aviso"></p>
-            <label for="reporte-cat">Qué reportas</label>
-            <select id="reporte-cat">
-              <option value="dano">Daño en edificio</option>
-              <option value="recurso">Recurso disponible</option>
-              <option value="acceso">Acceso bloqueado</option>
-            </select>
-            <div id="grupo-dano">
-              <label for="reporte-dano">Nivel de daño</label>
-              <select id="reporte-dano">
-                <option value="minor-damage">Daño menor</option>
-                <option value="major-damage">Daño mayor</option>
-                <option value="destroyed" selected>Destruido</option>
-              </select>
-            </div>
-            <label for="reporte-desc">Descripción</label>
-            <textarea id="reporte-desc" required placeholder="Describe lo que ves..."></textarea>
-            <label for="reporte-autor">Tu nombre (opcional)</label>
-            <input type="text" id="reporte-autor" placeholder="vecino/a anónimo" />
-            <div class="reporte-acciones">
-              <button type="button" class="btn-cancelar-reporte">Cancelar</button>
-              <button type="submit" class="btn-publicar-reporte">Publicar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- Cola de revisión (solo administradora) -->
-      <div class="panel__seccion" id="seccion-cola">
-        <p class="panel__titulo">Revisión humana</p>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:10px">
-          La IA solo sugiere. Confirma, rechaza o corrige cada sugerencia.
-        </p>
-        <div id="lista-tarjetas"></div>
-      </div>
-
-    </aside>
-
-    <!-- Mapa -->
-    <div id="map"></div>
-
-  </div>
-</div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="module">
-import { login, listarEscenas, analizarEscena, listarSugerencias,
-         obtenerResumen, validarSugerencia, crearReporte,
-         contarPorOrigen, urlImagen, listarActivaciones, usarActivacion } from "../js/core/api.js";
-
-// ===== ESTADO GLOBAL =====
-let _token = null;
-let _rol   = null;
-let _email = null;
-let _escena = null;
-let _mapa   = null;
-let _capas  = {};
-let _marcadores = new Map();
-let _esperandoUbicacion = false;
-let _marcadorProv = null;
-
-// ===== LOGIN =====
-document.getElementById("form-login").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById("btn-entrar");
-  const err = document.getElementById("login-error");
-  btn.disabled = true;
-  btn.textContent = "Entrando…";
-  err.textContent = "";
-
-  try {
-    const res = await login(
-      document.getElementById("login-email").value,
-      document.getElementById("login-pass").value,
-    );
-    _token = res.token;
-    _rol   = res.rol;
-    _email = res.email;
-    iniciarApp();
-  } catch (error) {
-    err.textContent = "Correo o contraseña incorrectos.";
-    btn.disabled = false;
-    btn.textContent = "Entrar";
-  }
-});
-
-document.getElementById("btn-salir").addEventListener("click", () => {
-  _token = _rol = _email = null;
-  document.getElementById("vista-app").style.display = "none";
-  document.getElementById("vista-login").style.display = "flex";
-  document.getElementById("form-login").reset();
-  document.getElementById("login-error").textContent = "";
-});
-
-// ===== INICIAR APP =====
-async function iniciarApp() {
-  document.getElementById("vista-login").style.display = "none";
-  const app = document.getElementById("vista-app");
-  app.style.display = "flex";
-
-  document.getElementById("label-usuario").textContent = _email;
-  const badge = document.getElementById("badge-rol");
-  badge.textContent = _rol === "administradora" ? "Administradora" : "Cooperante";
-  badge.className = `cabecera__rol cabecera__rol--${_rol}`;
-
-  // Ocultar cola de revisión si es cooperante
-  if (_rol !== "administradora") {
-    document.getElementById("seccion-cola").style.display = "none";
-    document.getElementById("seccion-copernicus").style.display = "none";
-  } else {
-    cargarActivaciones();
-  }
-
-  // Inicializar mapa
-  if (!_mapa) {
-    _mapa = L.map("map").setView([0, 0], 2);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(_mapa);
-
-    const estados = ["pendiente","confirmada","rechazada","corregida","reporte-local"];
-    estados.forEach(e => { _capas[e] = L.layerGroup().addTo(_mapa); });
-
-    const nombres = {
-      pendiente: "IA · pendientes",
-      confirmada: "IA · confirmadas",
-      rechazada: "IA · rechazadas",
-      corregida: "IA · corregidas",
-      "reporte-local": "Reportes de personas",
-    };
-    const etiquetadas = {};
-    estados.forEach(e => { etiquetadas[nombres[e]] = _capas[e]; });
-    L.control.layers(null, etiquetadas, { collapsed: false }).addTo(_mapa);
-
-    _mapa.on("click", (ev) => {
-      if (!_esperandoUbicacion) return;
-      const { lat, lng } = ev.latlng;
-      if (_marcadorProv) {
-        _marcadorProv.setLatLng(ev.latlng);
-      } else {
-        _marcadorProv = L.marker(ev.latlng, {
-          icon: L.divIcon({ className:"", html:'<div class="marcador-provisional"></div>', iconSize:[18,18], iconAnchor:[9,9] })
-        }).addTo(_mapa);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MapAid</title>
+    <link rel="icon" href="../assets/logo-mapaid-pin.png" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-      document.getElementById("reporte-aviso").textContent =
-        `Lugar marcado (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-      _lat = lat; _lng = lng;
-    });
-  }
 
-  // Cargar escenas
-  try {
-    const escenas = await listarEscenas(_token);
-    const sel = document.getElementById("selector-escena");
-    sel.innerHTML = escenas.map(e =>
-      `<option value="${e.escena}">${e.escena} · ${e.tipo_desastre}</option>`
-    ).join("");
-    if (escenas.length) {
-      _escena = escenas[0].escena;
-      await refrescar();
-    }
-  } catch {
-    document.getElementById("lista-tarjetas").innerHTML =
-      '<p class="estado-lista estado-lista--error">No se pudo conectar con el backend.</p>';
-  }
-}
+      :root {
+        --navy: #092e4e; /* Background */
+        --coral: #fa4531;
+        --teal: #1f9e7a;
+        --amber: #ba7517;
+        --green: #2e7d32;
+        --red: #c0392b;
+        --purple: #6a4fb6;
+        --bg: #f0eee8;
+        --white: #ffffff;
+        --border: #d8d5cc;
+        --text: #1a1a18;
+        --muted: #6b6960;
+        --panel: #fafaf7;
+      }
 
-// ===== REFRESCAR =====
-async function refrescar() {
-  await Promise.all([
-    cargarMapa(),
-    cargarResumen(),
-    _rol === "administradora" ? cargarCola() : Promise.resolve(),
-    cargarOrigen(),
-  ]);
-}
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+        line-height: 1.5;
+      }
 
-// ===== SELECTOR DE ESCENA =====
-document.getElementById("selector-escena").addEventListener("change", async (e) => {
-  _escena = e.target.value;
-  await refrescar();
-});
+      /* ===== LOGIN ===== Pantalla inicial para autenticación con correo y contraseña*/
+      #vista-login {
+        min-height: 100vh; /* Dónde está la caja de login en la página */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: var(--navy);
+      }
 
-// ===== ANALIZAR =====
-document.getElementById("btn-analizar").addEventListener("click", async () => {
-  const btn = document.getElementById("btn-analizar");
-  btn.disabled = true;
-  btn.textContent = "Analizando…";
-  try {
-    const r = await analizarEscena(_escena, _token);
-    await refrescar();
-    alert(`Análisis terminado: ${r.detectadas} cambios detectados.\nSon sugerencias sin confirmar — revísalas antes de publicar.`);
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Analizar escena";
-  }
-});
+      .login-box {
+        width: 100%;
+        max-width: 380px;
+        background: var(--white);
+        border-radius: 16px;
+        padding: 36px 32px;
+      }
 
-// ===== MAPA =====
-async function cargarMapa() {
-  // Cargar sugerencias de la IA de la escena activa
-  const puntosIA = await listarSugerencias({ escena: _escena }, _token);
-  // Cargar reportes de personas de todas las escenas (incluida "publica")
-  const puntosPersonas = await listarSugerencias({}, _token);
-  const soloPersonas = puntosPersonas.filter(p => p.origen === "persona");
+      .login-marca {
+        /* Marca de la aplicación */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 28px;
+      }
 
-  // Unir evitando duplicados (por id)
-  const ids = new Set(puntosIA.map(p => p.id));
-  const puntos = [...puntosIA, ...soloPersonas.filter(p => !ids.has(p.id))];
+      .login-marca img {
+        /* Logo */
+        height: 40px;
+      }
 
-  Object.values(_capas).forEach(c => c.clearLayers());
-  _marcadores.clear();
+      .login-marca__nombre {
+        /* Nombre Aplicación*/
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--navy);
+        letter-spacing: -0.02em;
+      }
 
-  if (!puntos.length) return;
-  puntos.forEach(p => pintarPunto(p));
+      .login-marca__lema {
+        /* "Mapear para ayudar" */
+        font-size: 11px;
+        color: var(--muted);
+      }
 
-  const coords = puntos.map(p => [p.latitud, p.longitud]);
-  _mapa.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
-}
+      .campo {
+        /* Campo de entrada */
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 14px;
+      }
 
-function pintarPunto(p) {
-  const capa = p.origen === "persona" ? "reporte-local" : p.estado;
-  const esReporte = p.origen === "persona";
+      .campo label {
+        /* Tamaño de la cajita de login */
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+      }
 
-  const icono = L.divIcon({
-    className: "",
-    html: esReporte
-      ? `<div class="marcador marcador--reporte marcador--${p.categoria}"></div>`
-      : `<div class="marcador marcador--${p.estado}"></div>`,
-    iconSize: esReporte ? [14,14] : [13,13],
-    iconAnchor: esReporte ? [7,7] : [6.5,6.5],
-  });
+      .campo input {
+        /* Campos a rellenar */
+        padding: 10px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font: inherit;
+        font-size: 14px;
+        background: var(--bg);
+        transition: border-color 0.15s;
+        width: 100%;
+      }
 
-  const DANO = { "minor-damage":"Daño menor","major-damage":"Daño mayor",
-    destroyed:"Destruido","un-classified":"Sin clasificar","no-damage":"Sin daño" };
-  const CAT  = { dano:"Daño", recurso:"Recurso disponible", acceso:"Acceso bloqueado" };
+      .campo input:focus {
+        outline: none;
+        border-color: var(--navy);
+        background: var(--white);
+      }
 
-  const popup = esReporte
-    ? `<b>${CAT[p.categoria]||p.categoria}</b><br><small>Reportado por persona</small><br>${p.descripcion||""}<br><em>${p.reportado_por||""}</em>`
-    : `<b>${p.dano_etiqueta||DANO[p.dano]||p.dano}</b><br><small>Detectado por la IA</small><br>Confianza: ${Math.round(p.confianza*100)}%<br>Estado: ${p.estado}${p.estado==="pendiente"?"<br><em style='color:var(--amber)'>Sin confirmar</em>":""}`;
+      .btn-login {
+        /* Botón de inicio de sesión */
+        width: 100%;
+        padding: 11px;
+        border: none;
+        border-radius: 8px;
+        background: var(--navy);
+        color: var(--white);
+        font: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 4px;
+        transition: opacity 0.15s;
+      }
 
-  const m = L.marker([p.latitud, p.longitud], { icon: icono }).bindPopup(popup);
-  m.addTo(_capas[capa]);
-  _marcadores.set(p.id, m);
-}
+      .btn-login:hover {
+        opacity: 0.88;
+      }
+      .btn-login:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
 
-// ===== RESUMEN =====
-async function cargarResumen() {
-  try {
-    const r = await obtenerResumen(_escena, _token);
-    document.getElementById("resumen").innerHTML = Object.entries(r).map(([estado, n]) => `
+      .login-error {
+        color: var(--red);
+        font-size: 12px;
+        margin-top: 10px;
+        min-height: 18px;
+      }
+
+      .login-aviso {
+        margin-top: 20px;
+        padding: 10px 12px;
+        background: var(--bg);
+        border-radius: 8px;
+        font-size: 11px;
+        color: var(--muted);
+        border-left: 3px solid var(--border);
+      }
+
+      /* ===== APP ===== */
+      #vista-app {
+        display: none;
+        height: 100vh;
+        flex-direction: column;
+      }
+
+      /* Cabecera */
+      .cabecera {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        height: 48px;
+        background: var(--navy);
+        color: var(--white);
+        flex-shrink: 0;
+      }
+
+      .cabecera__marca {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 15px;
+      }
+
+      .cabecera__marca img {
+        height: 24px;
+      }
+
+      .cabecera__rol {
+        font-size: 11px;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .cabecera__rol--cooperante {
+        background: rgba(31, 158, 122, 0.3);
+      }
+      .cabecera__rol--administradora {
+        background: rgba(250, 69, 49, 0.35);
+      }
+
+      .cabecera__derecha {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .cabecera__usuario {
+        font-size: 12px;
+        opacity: 0.75;
+      }
+
+      .btn-salir {
+        font: inherit;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--white);
+        padding: 4px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .btn-salir:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Contador origen */
+      .origen-bar {
+        display: flex;
+        gap: 16px;
+        padding: 4px 16px;
+        background: rgba(9, 46, 78, 0.92);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+        flex-shrink: 0;
+      }
+
+      /* Layout principal */
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      @media (max-width: 768px) {
+        .layout {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+      }
+
+      /* Panel lateral */
+      .panel {
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .panel__seccion {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .panel__titulo {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+
+      /* Selector de escena */
+      .escena-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .escena-controls select {
+        font: inherit;
+        font-size: 12px;
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--white);
+        width: 100%;
+        color: var(--text);
+      }
+
+      .btn-analizar {
+        font: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 7px 12px;
+        border: 1.5px solid var(--navy);
+        border-radius: 7px;
+        background: var(--white);
+        color: var(--navy);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-analizar:hover {
+        background: var(--navy);
+        color: var(--white);
+      }
+      .btn-analizar:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      /* Resumen */
+      .resumen {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+      }
+
+      .resumen__dato {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 7px 5px;
+        text-align: center;
+      }
+
+      .resumen__num {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .resumen__label {
+        font-size: 9px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .resumen__dato--pendiente .resumen__num {
+        color: var(--amber);
+      }
+      .resumen__dato--confirmada .resumen__num {
+        color: var(--green);
+      }
+      .resumen__dato--rechazada .resumen__num {
+        color: var(--red);
+      }
+      .resumen__dato--corregida .resumen__num {
+        color: var(--purple);
+      }
+
+      /* Bloque reporte */
+      .bloque-reporte {
+        background: rgba(31, 158, 122, 0.05);
+        border: 1px solid rgba(31, 158, 122, 0.25);
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .btn-reportar {
+        width: 100%;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 12px;
+        border: 1.5px solid var(--teal);
+        border-radius: 7px;
+        background: var(--white);
+        color: var(--teal);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-reportar:hover {
+        background: var(--teal);
+        color: var(--white);
+      }
+
+      .form-reporte {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-reporte label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      .form-reporte select,
+      .form-reporte textarea,
+      .form-reporte input[type="text"] {
+        font: inherit;
+        font-size: 12px;
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--white);
+        width: 100%;
+      }
+
+      .form-reporte textarea {
+        resize: vertical;
+        min-height: 56px;
+      }
+
+      .reporte-aviso {
+        font-size: 11px;
+        color: var(--teal);
+        min-height: 16px;
+      }
+
+      .reporte-acciones {
+        display: flex;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .btn-cancelar-reporte {
+        flex: 1;
+        font: inherit;
+        font-size: 12px;
+        padding: 7px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--white);
+        cursor: pointer;
+      }
+
+      .btn-publicar-reporte {
+        flex: 1;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 7px;
+        border: none;
+        border-radius: 7px;
+        background: var(--teal);
+        color: var(--white);
+        cursor: pointer;
+      }
+
+      /* Tarjeta de validación */
+      .tarjeta {
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--amber);
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: var(--white);
+        cursor: pointer;
+        transition: box-shadow 0.12s;
+      }
+
+      .tarjeta:hover {
+        box-shadow: 0 2px 8px rgba(9, 46, 78, 0.08);
+      }
+
+      .tarjeta.is-seleccionada {
+        border-left-color: var(--coral);
+        box-shadow: 0 0 0 2px rgba(250, 69, 49, 0.15);
+      }
+
+      .tarjeta__aviso {
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--amber);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 5px;
+      }
+
+      .tarjeta__cabecera {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 7px;
+      }
+
+      .tarjeta__dano {
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .tarjeta__dano--minor-damage {
+        color: var(--amber);
+      }
+      .tarjeta__dano--major-damage {
+        color: #d4650a;
+      }
+      .tarjeta__dano--destroyed {
+        color: var(--red);
+      }
+
+      .tarjeta__confianza {
+        font-size: 10px;
+        color: var(--muted);
+        background: var(--bg);
+        padding: 2px 7px;
+        border-radius: 20px;
+      }
+
+      .tarjeta__imagenes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+        margin-bottom: 7px;
+      }
+
+      .tarjeta__img-wrap {
+        position: relative;
+        border-radius: 5px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      .tarjeta__img-wrap img {
+        display: block;
+        width: 100%;
+        height: 72px;
+        object-fit: cover;
+      }
+
+      .tarjeta__img-label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        font-size: 9px;
+        padding: 1px 5px;
+        font-weight: 600;
+      }
+
+      .tarjeta__img-label--antes {
+        background: var(--navy);
+        color: var(--white);
+      }
+
+      .tarjeta__img-label--despues {
+        background: var(--coral);
+        color: var(--white);
+      }
+
+      .tarjeta__meta {
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .tarjeta__acciones {
+        display: flex;
+        gap: 5px;
+      }
+
+      .tarjeta__acciones button {
+        flex: 1;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 5px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1.5px solid;
+        background: var(--white);
+        transition: all 0.12s;
+      }
+
+      .btn-aceptar {
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .btn-aceptar:hover {
+        background: var(--green);
+        color: var(--white);
+      }
+      .btn-rechazar {
+        border-color: var(--red);
+        color: var(--red);
+      }
+      .btn-rechazar:hover {
+        background: var(--red);
+        color: var(--white);
+      }
+      .btn-editar {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+      .btn-editar:hover {
+        background: var(--purple);
+        color: var(--white);
+      }
+
+      /* Estados vacío/cargando */
+      .estado-lista {
+        padding: 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .estado-lista--error {
+        color: var(--red);
+      }
+
+      /* Mapa */
+      #map {
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Marcadores */
+      .marcador {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        border: 2px solid var(--white);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+
+      .marcador--pendiente {
+        background: var(--amber);
+      }
+      .marcador--confirmada {
+        background: var(--green);
+      }
+      .marcador--rechazada {
+        background: var(--red);
+      }
+      .marcador--corregida {
+        background: var(--purple);
+      }
+
+      .marcador--reporte {
+        border-radius: 3px;
+        width: 14px;
+        height: 14px;
+        border: 2.5px solid var(--white);
+      }
+
+      .marcador--dano {
+        background: var(--red);
+      }
+      .marcador--recurso {
+        background: var(--teal);
+      }
+      .marcador--acceso {
+        background: var(--navy);
+      }
+
+      .marcador-provisional {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2.5px dashed var(--teal);
+        background: rgba(31, 158, 122, 0.18);
+      }
+
+      /* Tarjeta de activación Copernicus */
+      .activacion {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--navy);
+        border-radius: 8px;
+        padding: 9px 10px;
+        margin-bottom: 6px;
+      }
+
+      .activacion__codigo {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--navy);
+        letter-spacing: 0.04em;
+      }
+
+      .activacion__titulo {
+        font-size: 12px;
+        font-weight: 500;
+        margin: 2px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .activacion__meta {
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .btn-usar-activacion {
+        font: inherit;
+        font-size: 11px;
+        padding: 4px 10px;
+        border: 1px solid var(--navy);
+        border-radius: 6px;
+        background: var(--white);
+        color: var(--navy);
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.12s;
+      }
+
+      .btn-usar-activacion:hover {
+        background: var(--navy);
+        color: var(--white);
+      }
+
+      /* Ocultar */
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ===== PANTALLA LOGIN ===== -->
+    <div id="vista-login">
+      <div class="login-box">
+        <div class="login-marca">
+          <img src="../assets/logo-mapaid-pin.png" alt="MapAid logo" />
+          <div>
+            <div class="login-marca__nombre">MapAid</div>
+            <div class="login-marca__lema">Mapear para ayudar</div>
+          </div>
+        </div>
+
+        <form id="form-login">
+          <div class="campo">
+            <label for="login-email">Correo</label>
+            <input
+              id="login-email"
+              type="email"
+              placeholder="nombre@mapaid.com"
+              required
+              autocomplete="email"
+            />
+          </div>
+          <div class="campo">
+            <label for="login-pass">Contraseña</label>
+            <input
+              id="login-pass"
+              type="password"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+          <button type="submit" class="btn-login" id="btn-entrar">
+            Entrar
+          </button>
+          <p class="login-error" id="login-error" role="alert"></p>
+        </form>
+
+        <div class="login-aviso">
+          No hay registro público. Las cuentas las gestiona la administradora.
+        </div>
+        <p
+          style="
+            text-align: center;
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--muted);
+          "
+        >
+          ¿Eres vecino/a y quieres reportar algo que has visto?<br />
+          <a
+            href="reporte-publico.html"
+            style="color: var(--navy); font-weight: 600"
+          >
+            Enviar aviso sin cuenta →
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== PANTALLA APP ===== -->
+    <div id="vista-app">
+      <header class="cabecera">
+        <div class="cabecera__marca">
+          <img src="../assets/logo-mapaid-pin.png" alt="" />
+          MapAid
+          <span class="cabecera__rol" id="badge-rol"></span>
+        </div>
+        <div class="cabecera__derecha">
+          <span class="cabecera__usuario" id="label-usuario"></span>
+          <button class="btn-salir" id="btn-salir">Salir</button>
+        </div>
+      </header>
+
+      <div class="origen-bar" id="origen-bar">
+        <span>
+          <a
+            href="reporte-publico.html"
+            target="_blank"
+            style="
+              color: rgba(255, 255, 255, 0.7);
+              text-decoration: underline;
+              font-size: 11px;
+            "
+          >
+            🔗 Enlace para vecinos (sin login)
+          </a>
+        </span>
+      </div>
+
+      <div class="layout">
+        <!-- Panel lateral -->
+        <aside class="panel">
+          <!-- Activaciones Copernicus (solo administradora) -->
+          <div class="panel__seccion" id="seccion-copernicus">
+            <p class="panel__titulo">Activaciones Copernicus</p>
+            <div id="lista-activaciones">
+              <p class="estado-lista" style="padding: 8px 0">
+                Cargando activaciones…
+              </p>
+            </div>
+          </div>
+
+          <!-- Selector de escena -->
+          <div class="panel__seccion">
+            <p class="panel__titulo">Escena activa</p>
+            <div class="escena-controls">
+              <select
+                id="selector-escena"
+                aria-label="Seleccionar escena"
+              ></select>
+              <button class="btn-analizar" id="btn-analizar">
+                Analizar escena
+              </button>
+            </div>
+          </div>
+
+          <!-- Resumen -->
+          <div class="panel__seccion">
+            <p class="panel__titulo">Estado del mapa</p>
+            <div class="resumen" id="resumen"></div>
+          </div>
+
+          <!-- Reporte local (todos los roles) -->
+          <div class="panel__seccion">
+            <p class="panel__titulo">Conocimiento local</p>
+            <div class="bloque-reporte">
+              <p
+                style="font-size: 11px; color: var(--muted); margin-bottom: 8px"
+              >
+                ¿Ves algo que el satélite no detectó? Repórtalo aquí.
+              </p>
+              <button class="btn-reportar" id="btn-reportar">
+                + Reportar lo que veo
+              </button>
+              <form class="form-reporte hidden" id="form-reporte">
+                <p class="reporte-aviso" id="reporte-aviso"></p>
+                <label for="reporte-cat">Qué reportas</label>
+                <select id="reporte-cat">
+                  <option value="dano">Daño en edificio</option>
+                  <option value="recurso">Recurso disponible</option>
+                  <option value="acceso">Acceso bloqueado</option>
+                </select>
+                <div id="grupo-dano">
+                  <label for="reporte-dano">Nivel de daño</label>
+                  <select id="reporte-dano">
+                    <option value="minor-damage">Daño menor</option>
+                    <option value="major-damage">Daño mayor</option>
+                    <option value="destroyed" selected>Destruido</option>
+                  </select>
+                </div>
+                <label for="reporte-desc">Descripción</label>
+                <textarea
+                  id="reporte-desc"
+                  required
+                  placeholder="Describe lo que ves..."
+                ></textarea>
+                <label for="reporte-autor">Tu nombre (opcional)</label>
+                <input
+                  type="text"
+                  id="reporte-autor"
+                  placeholder="vecino/a anónimo"
+                />
+                <div class="reporte-acciones">
+                  <button type="button" class="btn-cancelar-reporte">
+                    Cancelar
+                  </button>
+                  <button type="submit" class="btn-publicar-reporte">
+                    Publicar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Cola de revisión (solo administradora) -->
+          <div class="panel__seccion" id="seccion-cola">
+            <p class="panel__titulo">Revisión humana</p>
+            <p
+              style="font-size: 11px; color: var(--muted); margin-bottom: 10px"
+            >
+              La IA solo sugiere. Confirma, rechaza o corrige cada sugerencia.
+            </p>
+            <div id="lista-tarjetas"></div>
+          </div>
+        </aside>
+
+        <!-- Mapa -->
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+      import {
+        login,
+        listarEscenas,
+        analizarEscena,
+        listarSugerencias,
+        obtenerResumen,
+        validarSugerencia,
+        crearReporte,
+        contarPorOrigen,
+        urlImagen,
+        listarActivaciones,
+        usarActivacion,
+      } from "../js/core/api.js";
+
+      // ===== ESTADO GLOBAL =====
+      let _token = null;
+      let _rol = null;
+      let _email = null;
+      let _escena = null;
+      let _mapa = null;
+      let _capas = {};
+      let _marcadores = new Map();
+      let _esperandoUbicacion = false;
+      let _marcadorProv = null;
+
+      // ===== LOGIN =====
+      document
+        .getElementById("form-login")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("btn-entrar");
+          const err = document.getElementById("login-error");
+          btn.disabled = true;
+          btn.textContent = "Entrando…";
+          err.textContent = "";
+
+          try {
+            const res = await login(
+              document.getElementById("login-email").value,
+              document.getElementById("login-pass").value,
+            );
+            _token = res.token;
+            _rol = res.rol;
+            _email = res.email;
+            iniciarApp();
+          } catch (error) {
+            err.textContent = "Correo o contraseña incorrectos.";
+            btn.disabled = false;
+            btn.textContent = "Entrar";
+          }
+        });
+
+      document.getElementById("btn-salir").addEventListener("click", () => {
+        _token = _rol = _email = null;
+        document.getElementById("vista-app").style.display = "none";
+        document.getElementById("vista-login").style.display = "flex";
+        document.getElementById("form-login").reset();
+        document.getElementById("login-error").textContent = "";
+      });
+
+      // ===== INICIAR APP =====
+      async function iniciarApp() {
+        document.getElementById("vista-login").style.display = "none";
+        const app = document.getElementById("vista-app");
+        app.style.display = "flex";
+
+        document.getElementById("label-usuario").textContent = _email;
+        const badge = document.getElementById("badge-rol");
+        badge.textContent =
+          _rol === "administradora" ? "Administradora" : "Cooperante";
+        badge.className = `cabecera__rol cabecera__rol--${_rol}`;
+
+        // Ocultar cola de revisión si es cooperante
+        if (_rol !== "administradora") {
+          document.getElementById("seccion-cola").style.display = "none";
+          document.getElementById("seccion-copernicus").style.display = "none";
+        } else {
+          cargarActivaciones();
+        }
+
+        // Inicializar mapa
+        if (!_mapa) {
+          _mapa = L.map("map").setView([0, 0], 2);
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          }).addTo(_mapa);
+
+          const estados = [
+            "pendiente",
+            "confirmada",
+            "rechazada",
+            "corregida",
+            "reporte-local",
+          ];
+          estados.forEach((e) => {
+            _capas[e] = L.layerGroup().addTo(_mapa);
+          });
+
+          const nombres = {
+            pendiente: "IA · pendientes",
+            confirmada: "IA · confirmadas",
+            rechazada: "IA · rechazadas",
+            corregida: "IA · corregidas",
+            "reporte-local": "Reportes de personas",
+          };
+          const etiquetadas = {};
+          estados.forEach((e) => {
+            etiquetadas[nombres[e]] = _capas[e];
+          });
+          L.control
+            .layers(null, etiquetadas, { collapsed: false })
+            .addTo(_mapa);
+
+          _mapa.on("click", (ev) => {
+            if (!_esperandoUbicacion) return;
+            const { lat, lng } = ev.latlng;
+            if (_marcadorProv) {
+              _marcadorProv.setLatLng(ev.latlng);
+            } else {
+              _marcadorProv = L.marker(ev.latlng, {
+                icon: L.divIcon({
+                  className: "",
+                  html: '<div class="marcador-provisional"></div>',
+                  iconSize: [18, 18],
+                  iconAnchor: [9, 9],
+                }),
+              }).addTo(_mapa);
+            }
+            document.getElementById("reporte-aviso").textContent =
+              `Lugar marcado (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+            _lat = lat;
+            _lng = lng;
+          });
+        }
+
+        // Cargar escenas
+        try {
+          const escenas = await listarEscenas(_token);
+          const sel = document.getElementById("selector-escena");
+          sel.innerHTML = escenas
+            .map(
+              (e) =>
+                `<option value="${e.escena}">${e.escena} · ${e.tipo_desastre}</option>`,
+            )
+            .join("");
+          if (escenas.length) {
+            _escena = escenas[0].escena;
+            await refrescar();
+          }
+        } catch {
+          document.getElementById("lista-tarjetas").innerHTML =
+            '<p class="estado-lista estado-lista--error">No se pudo conectar con el backend.</p>';
+        }
+      }
+
+      // ===== REFRESCAR =====
+      async function refrescar() {
+        await Promise.all([
+          cargarMapa(),
+          cargarResumen(),
+          _rol === "administradora" ? cargarCola() : Promise.resolve(),
+          cargarOrigen(),
+        ]);
+      }
+
+      // ===== SELECTOR DE ESCENA =====
+      document
+        .getElementById("selector-escena")
+        .addEventListener("change", async (e) => {
+          _escena = e.target.value;
+          await refrescar();
+        });
+
+      // ===== ANALIZAR =====
+      document
+        .getElementById("btn-analizar")
+        .addEventListener("click", async () => {
+          const btn = document.getElementById("btn-analizar");
+          btn.disabled = true;
+          btn.textContent = "Analizando…";
+          try {
+            const r = await analizarEscena(_escena, _token);
+            await refrescar();
+            alert(
+              `Análisis terminado: ${r.detectadas} cambios detectados.\nSon sugerencias sin confirmar — revísalas antes de publicar.`,
+            );
+          } catch (err) {
+            alert(`Error: ${err.message}`);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Analizar escena";
+          }
+        });
+
+      // ===== MAPA =====
+      async function cargarMapa() {
+        // Cargar sugerencias de la IA de la escena activa
+        const puntosIA = await listarSugerencias({ escena: _escena }, _token);
+        // Cargar reportes de personas de todas las escenas (incluida "publica")
+        const puntosPersonas = await listarSugerencias({}, _token);
+        const soloPersonas = puntosPersonas.filter(
+          (p) => p.origen === "persona",
+        );
+
+        // Unir evitando duplicados (por id)
+        const ids = new Set(puntosIA.map((p) => p.id));
+        const puntos = [
+          ...puntosIA,
+          ...soloPersonas.filter((p) => !ids.has(p.id)),
+        ];
+
+        Object.values(_capas).forEach((c) => c.clearLayers());
+        _marcadores.clear();
+
+        if (!puntos.length) return;
+        puntos.forEach((p) => pintarPunto(p));
+
+        const coords = puntos.map((p) => [p.latitud, p.longitud]);
+        _mapa.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
+      }
+
+      function pintarPunto(p) {
+        const capa = p.origen === "persona" ? "reporte-local" : p.estado;
+        const esReporte = p.origen === "persona";
+
+        const icono = L.divIcon({
+          className: "",
+          html: esReporte
+            ? `<div class="marcador marcador--reporte marcador--${p.categoria}"></div>`
+            : `<div class="marcador marcador--${p.estado}"></div>`,
+          iconSize: esReporte ? [14, 14] : [13, 13],
+          iconAnchor: esReporte ? [7, 7] : [6.5, 6.5],
+        });
+
+        const DANO = {
+          "minor-damage": "Daño menor",
+          "major-damage": "Daño mayor",
+          destroyed: "Destruido",
+          "un-classified": "Sin clasificar",
+          "no-damage": "Sin daño",
+        };
+        const CAT = {
+          dano: "Daño",
+          recurso: "Recurso disponible",
+          acceso: "Acceso bloqueado",
+        };
+
+        const popup = esReporte
+          ? `<b>${CAT[p.categoria] || p.categoria}</b><br><small>Reportado por persona</small><br>${p.descripcion || ""}<br><em>${p.reportado_por || ""}</em>`
+          : `<b>${p.dano_etiqueta || DANO[p.dano] || p.dano}</b><br><small>Detectado por la IA</small><br>Confianza: ${Math.round(p.confianza * 100)}%<br>Estado: ${p.estado}${p.estado === "pendiente" ? "<br><em style='color:var(--amber)'>Sin confirmar</em>" : ""}`;
+
+        const m = L.marker([p.latitud, p.longitud], { icon: icono }).bindPopup(
+          popup,
+        );
+        m.addTo(_capas[capa]);
+        _marcadores.set(p.id, m);
+      }
+
+      // ===== RESUMEN =====
+      async function cargarResumen() {
+        try {
+          const r = await obtenerResumen(_escena, _token);
+          document.getElementById("resumen").innerHTML = Object.entries(r)
+            .map(
+              ([estado, n]) => `
       <div class="resumen__dato resumen__dato--${estado}">
         <span class="resumen__num">${n}</span>
         <span class="resumen__label">${estado}</span>
-      </div>`).join("");
-  } catch {}
-}
+      </div>`,
+            )
+            .join("");
+        } catch {}
+      }
 
-// ===== ORIGEN =====
-async function cargarOrigen() {
-  try {
-    const r = await contarPorOrigen(_escena, _token);
-    document.getElementById("origen-bar").innerHTML =
-      `<span><b>${r.ia}</b> detectados por la IA</span><span><b>${r.persona}</b> reportados por personas</span>`;
-  } catch {}
-}
+      // ===== ORIGEN =====
+      async function cargarOrigen() {
+        try {
+          const r = await contarPorOrigen(_escena, _token);
+          document.getElementById("origen-bar").innerHTML =
+            `<span><b>${r.ia}</b> detectados por la IA</span><span><b>${r.persona}</b> reportados por personas</span>`;
+        } catch {}
+      }
 
-// ===== COLA DE REVISIÓN =====
-async function cargarCola() {
-  const cont = document.getElementById("lista-tarjetas");
-  cont.innerHTML = '<p class="estado-lista">Cargando…</p>';
-  try {
-    // Cargar sugerencias de la IA pendientes (filtradas por escena)
-    const sugsIA = await listarSugerencias({ escena: _escena, estado: "pendiente" }, _token);
-    const pendientesIA = sugsIA.filter(s => s.origen === "ia");
+      // ===== COLA DE REVISIÓN =====
+      async function cargarCola() {
+        const cont = document.getElementById("lista-tarjetas");
+        cont.innerHTML = '<p class="estado-lista">Cargando…</p>';
+        try {
+          // Cargar sugerencias de la IA pendientes (filtradas por escena)
+          const sugsIA = await listarSugerencias(
+            { escena: _escena, estado: "pendiente" },
+            _token,
+          );
+          const pendientesIA = sugsIA.filter((s) => s.origen === "ia");
 
-    // Cargar reportes de invitados/personas pendientes (TODAS las escenas,
-    // incluida "publica" que es la que usan los vecinos sin login)
-    const todosReportes = await listarSugerencias({ estado: "pendiente" }, _token);
-    const pendientesInvitados = todosReportes.filter(s =>
-      s.origen === "persona" && s.estado === "pendiente"
-    );
+          // Cargar reportes de invitados/personas pendientes (TODAS las escenas,
+          // incluida "publica" que es la que usan los vecinos sin login)
+          const todosReportes = await listarSugerencias(
+            { estado: "pendiente" },
+            _token,
+          );
+          const pendientesInvitados = todosReportes.filter(
+            (s) => s.origen === "persona" && s.estado === "pendiente",
+          );
 
-    const todos = [...pendientesIA, ...pendientesInvitados];
+          const todos = [...pendientesIA, ...pendientesInvitados];
 
-    if (!todos.length) {
-      cont.innerHTML = '<p class="estado-lista">No hay sugerencias pendientes.</p>';
-      return;
-    }
+          if (!todos.length) {
+            cont.innerHTML =
+              '<p class="estado-lista">No hay sugerencias pendientes.</p>';
+            return;
+          }
 
-    cont.innerHTML = "";
+          cont.innerHTML = "";
 
-    // Primero los reportes de invitados (más urgentes — alguien está ahí ahora)
-    if (pendientesInvitados.length) {
-      const sep = document.createElement("p");
-      sep.style.cssText = "font-size:10px;font-weight:600;color:var(--coral);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px";
-      sep.textContent = `⚡ Avisos de vecinos (${pendientesInvitados.length})`;
-      cont.appendChild(sep);
-      pendientesInvitados.forEach(s => cont.appendChild(crearTarjetaReporte(s)));
-    }
+          // Primero los reportes de invitados (más urgentes — alguien está ahí ahora)
+          if (pendientesInvitados.length) {
+            const sep = document.createElement("p");
+            sep.style.cssText =
+              "font-size:10px;font-weight:600;color:var(--coral);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px";
+            sep.textContent = `⚡ Avisos de vecinos (${pendientesInvitados.length})`;
+            cont.appendChild(sep);
+            pendientesInvitados.forEach((s) =>
+              cont.appendChild(crearTarjetaReporte(s)),
+            );
+          }
 
-    // Luego las sugerencias de la IA
-    if (pendientesIA.length) {
-      const sep = document.createElement("p");
-      sep.style.cssText = "font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:10px 0 6px";
-      sep.textContent = `🛰 Sugerencias de la IA (${pendientesIA.length})`;
-      cont.appendChild(sep);
-      pendientesIA.forEach(s => cont.appendChild(crearTarjeta(s)));
-    }
+          // Luego las sugerencias de la IA
+          if (pendientesIA.length) {
+            const sep = document.createElement("p");
+            sep.style.cssText =
+              "font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin:10px 0 6px";
+            sep.textContent = `🛰 Sugerencias de la IA (${pendientesIA.length})`;
+            cont.appendChild(sep);
+            pendientesIA.forEach((s) => cont.appendChild(crearTarjeta(s)));
+          }
+        } catch (err) {
+          cont.innerHTML = `<p class="estado-lista estado-lista--error">Error cargando la cola.</p>`;
+        }
+      }
 
-  } catch (err) {
-    cont.innerHTML = `<p class="estado-lista estado-lista--error">Error cargando la cola.</p>`;
-  }
-}
+      function crearTarjetaReporte(s) {
+        const CATS = {
+          dano: "🏚 Daño",
+          recurso: "💧 Recurso",
+          acceso: "🚧 Acceso bloqueado",
+        };
+        const DANO = {
+          "minor-damage": "Daño menor",
+          "major-damage": "Daño mayor",
+          destroyed: "Destruido",
+          "un-classified": "",
+        };
 
-function crearTarjetaReporte(s) {
-  const CATS = { dano: "🏚 Daño", recurso: "💧 Recurso", acceso: "🚧 Acceso bloqueado" };
-  const DANO = { "minor-damage": "Daño menor", "major-damage": "Daño mayor",
-    destroyed: "Destruido", "un-classified": "" };
+        const div = document.createElement("article");
+        div.className = "tarjeta";
+        div.style.borderLeftColor = "var(--coral)";
+        div.dataset.id = s.id;
 
-  const div = document.createElement("article");
-  div.className = "tarjeta";
-  div.style.borderLeftColor = "var(--coral)";
-  div.dataset.id = s.id;
-
-  const coherencia = `
+        const coherencia = `
     <div style="margin-bottom:6px;padding:6px 8px;border-radius:6px;background:${
-      s.coherencia === 'coherente' ? 'rgba(46,125,50,0.08)' :
-      s.coherencia === 'posible' ? 'rgba(186,117,23,0.08)' :
-      'rgba(107,105,96,0.08)'
+      s.coherencia === "coherente"
+        ? "rgba(46,125,50,0.08)"
+        : s.coherencia === "posible"
+          ? "rgba(186,117,23,0.08)"
+          : "rgba(107,105,96,0.08)"
     };border-left:3px solid ${
-      s.coherencia === 'coherente' ? 'var(--green)' :
-      s.coherencia === 'posible' ? 'var(--amber)' :
-      'var(--muted)'
+      s.coherencia === "coherente"
+        ? "var(--green)"
+        : s.coherencia === "posible"
+          ? "var(--amber)"
+          : "var(--muted)"
     }">
       <p style="font-size:10px;font-weight:600;color:${
-        s.coherencia === 'coherente' ? 'var(--green)' :
-        s.coherencia === 'posible' ? 'var(--amber)' :
-        'var(--muted)'
+        s.coherencia === "coherente"
+          ? "var(--green)"
+          : s.coherencia === "posible"
+            ? "var(--amber)"
+            : "var(--muted)"
       };margin-bottom:2px">
-        🛰 ${s.coherencia === 'coherente' ? '✅ Coherente con el satélite' :
-              s.coherencia === 'posible' ? '⚠️ Posible (no concluyente)' :
-              '🔍 Sin imágenes satelitales disponibles para esta zona'}
+        🛰 ${
+          s.coherencia === "coherente"
+            ? "✅ Coherente con el satélite"
+            : s.coherencia === "posible"
+              ? "⚠️ Posible (no concluyente)"
+              : "🔍 Sin imágenes satelitales disponibles para esta zona"
+        }
       </p>
-      ${s.coherencia_explicacion
-        ? `<p style="font-size:10px;color:var(--muted);line-height:1.4">${s.coherencia_explicacion}</p>`
-        : `<p style="font-size:10px;color:var(--muted);line-height:1.4">El cruce con el satélite requiere imágenes de Copernicus descargadas para esta zona.</p>`
+      ${
+        s.coherencia_explicacion
+          ? `<p style="font-size:10px;color:var(--muted);line-height:1.4">${s.coherencia_explicacion}</p>`
+          : `<p style="font-size:10px;color:var(--muted);line-height:1.4">El cruce con el satélite requiere imágenes de Copernicus descargadas para esta zona.</p>`
       }
     </div>`;
 
-  div.innerHTML = `
+        div.innerHTML = `
     <p class="tarjeta__aviso" style="color:var(--coral)">⚡ Aviso de vecino — sin confirmar</p>
     <div class="tarjeta__cabecera">
       <span class="tarjeta__dano" style="color:var(--navy)">${CATS[s.categoria] || s.categoria}</span>
@@ -1083,148 +1343,193 @@ function crearTarjetaReporte(s) {
       <button class="btn-rechazar" type="button">Rechazar</button>
     </div>`;
 
-  div.addEventListener("click", () => {
-    document.querySelectorAll(".tarjeta").forEach(t => t.classList.remove("is-seleccionada"));
-    div.classList.add("is-seleccionada");
-    const m = _marcadores.get(s.id);
-    if (m) { _mapa.setView([s.latitud, s.longitud], 17); m.openPopup(); }
-  });
+        div.addEventListener("click", () => {
+          document
+            .querySelectorAll(".tarjeta")
+            .forEach((t) => t.classList.remove("is-seleccionada"));
+          div.classList.add("is-seleccionada");
+          const m = _marcadores.get(s.id);
+          if (m) {
+            _mapa.setView([s.latitud, s.longitud], 17);
+            m.openPopup();
+          }
+        });
 
-  div.querySelector(".btn-aceptar").addEventListener("click", ev => {
-    ev.stopPropagation(); decidir(s.id, "confirmar", div);
-  });
-  div.querySelector(".btn-rechazar").addEventListener("click", ev => {
-    ev.stopPropagation();
-    const motivo = prompt("¿Por qué rechazas este aviso?");
-    if (!motivo?.trim()) return;
-    decidir(s.id, "rechazar", div, { motivo: motivo.trim() });
-  });
+        div.querySelector(".btn-aceptar").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          decidir(s.id, "confirmar", div);
+        });
+        div.querySelector(".btn-rechazar").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const motivo = prompt("¿Por qué rechazas este aviso?");
+          if (!motivo?.trim()) return;
+          decidir(s.id, "rechazar", div, { motivo: motivo.trim() });
+        });
 
-  return div;
-}
+        return div;
+      }
 
-function crearTarjeta(s) {
-  const DANO = { "minor-damage":"Daño menor","major-damage":"Daño mayor",
-    destroyed:"Destruido","un-classified":"Sin clasificar" };
+      function crearTarjeta(s) {
+        const DANO = {
+          "minor-damage": "Daño menor",
+          "major-damage": "Daño mayor",
+          destroyed: "Destruido",
+          "un-classified": "Sin clasificar",
+        };
 
-  const div = document.createElement("article");
-  div.className = "tarjeta";
-  div.dataset.id = s.id;
-  div.innerHTML = `
+        const div = document.createElement("article");
+        div.className = "tarjeta";
+        div.dataset.id = s.id;
+        div.innerHTML = `
     <p class="tarjeta__aviso">⚠ Sugerencia sin confirmar</p>
     <div class="tarjeta__cabecera">
-      <span class="tarjeta__dano tarjeta__dano--${s.dano}">${s.dano_etiqueta||DANO[s.dano]||s.dano}</span>
-      <span class="tarjeta__confianza">${Math.round(s.confianza*100)}% confianza</span>
+      <span class="tarjeta__dano tarjeta__dano--${s.dano}">${s.dano_etiqueta || DANO[s.dano] || s.dano}</span>
+      <span class="tarjeta__confianza">${Math.round(s.confianza * 100)}% confianza</span>
     </div>
     <div class="tarjeta__imagenes">
       <div class="tarjeta__img-wrap">
-        <img src="${urlImagen(s.escena,'pre')}" alt="Antes" loading="lazy" />
+        <img src="${urlImagen(s.escena, "pre")}" alt="Antes" loading="lazy" />
         <span class="tarjeta__img-label tarjeta__img-label--antes">Antes</span>
       </div>
       <div class="tarjeta__img-wrap">
-        <img src="${urlImagen(s.escena,'post')}" alt="Después" loading="lazy" />
+        <img src="${urlImagen(s.escena, "post")}" alt="Después" loading="lazy" />
         <span class="tarjeta__img-label tarjeta__img-label--despues">Después</span>
       </div>
     </div>
-    <p class="tarjeta__meta">${s.escena}${s.capturada_en ? ' · '+s.capturada_en : ''}</p>
+    <p class="tarjeta__meta">${s.escena}${s.capturada_en ? " · " + s.capturada_en : ""}</p>
     <div class="tarjeta__acciones">
       <button class="btn-aceptar" type="button">Aceptar</button>
       <button class="btn-rechazar" type="button">Rechazar</button>
       <button class="btn-editar" type="button">Editar</button>
     </div>`;
 
-  div.addEventListener("click", () => {
-    document.querySelectorAll(".tarjeta").forEach(t => t.classList.remove("is-seleccionada"));
-    div.classList.add("is-seleccionada");
-    const m = _marcadores.get(s.id);
-    if (m) { _mapa.setView([s.latitud, s.longitud], 18); m.openPopup(); }
-  });
+        div.addEventListener("click", () => {
+          document
+            .querySelectorAll(".tarjeta")
+            .forEach((t) => t.classList.remove("is-seleccionada"));
+          div.classList.add("is-seleccionada");
+          const m = _marcadores.get(s.id);
+          if (m) {
+            _mapa.setView([s.latitud, s.longitud], 18);
+            m.openPopup();
+          }
+        });
 
-  div.querySelector(".btn-aceptar").addEventListener("click", ev => {
-    ev.stopPropagation(); decidir(s.id, "confirmar", div);
-  });
-  div.querySelector(".btn-rechazar").addEventListener("click", ev => {
-    ev.stopPropagation();
-    const motivo = prompt("¿Por qué no es correcta esta detección?");
-    if (!motivo?.trim()) return;
-    decidir(s.id, "rechazar", div, { motivo: motivo.trim() });
-  });
-  div.querySelector(".btn-editar").addEventListener("click", ev => {
-    ev.stopPropagation();
-    const motivo = prompt("¿Qué habría que corregir?");
-    if (!motivo?.trim()) return;
-    const nivel = prompt("Nivel correcto:\nno-damage / minor-damage / major-damage / destroyed", "minor-damage");
-    if (!nivel?.trim()) return;
-    decidir(s.id, "corregir", div, { motivo: motivo.trim(), dano_corregido: nivel.trim() });
-  });
+        div.querySelector(".btn-aceptar").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          decidir(s.id, "confirmar", div);
+        });
+        div.querySelector(".btn-rechazar").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const motivo = prompt("¿Por qué no es correcta esta detección?");
+          if (!motivo?.trim()) return;
+          decidir(s.id, "rechazar", div, { motivo: motivo.trim() });
+        });
+        div.querySelector(".btn-editar").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const motivo = prompt("¿Qué habría que corregir?");
+          if (!motivo?.trim()) return;
+          const nivel = prompt(
+            "Nivel correcto:\nno-damage / minor-damage / major-damage / destroyed",
+            "minor-damage",
+          );
+          if (!nivel?.trim()) return;
+          decidir(s.id, "corregir", div, {
+            motivo: motivo.trim(),
+            dano_corregido: nivel.trim(),
+          });
+        });
 
-  return div;
-}
+        return div;
+      }
 
-async function decidir(id, accion, tarjeta, extra = {}) {
-  tarjeta.querySelectorAll("button").forEach(b => b.disabled = true);
-  try {
-    await validarSugerencia(id, { accion, revisada_por: _email, ...extra }, _token);
-    tarjeta.remove();
-    await Promise.all([cargarResumen(), cargarOrigen(), cargarMapa()]);
-    const cola = document.getElementById("lista-tarjetas");
-    if (!cola.querySelector(".tarjeta")) {
-      cola.innerHTML = '<p class="estado-lista">No hay sugerencias pendientes.</p>';
-    }
-  } catch (err) {
-    alert(`No se pudo guardar: ${err.message}`);
-    tarjeta.querySelectorAll("button").forEach(b => b.disabled = false);
-  }
-}
+      async function decidir(id, accion, tarjeta, extra = {}) {
+        tarjeta.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        try {
+          await validarSugerencia(
+            id,
+            { accion, revisada_por: _email, ...extra },
+            _token,
+          );
+          tarjeta.remove();
+          await Promise.all([cargarResumen(), cargarOrigen(), cargarMapa()]);
+          const cola = document.getElementById("lista-tarjetas");
+          if (!cola.querySelector(".tarjeta")) {
+            cola.innerHTML =
+              '<p class="estado-lista">No hay sugerencias pendientes.</p>';
+          }
+        } catch (err) {
+          alert(`No se pudo guardar: ${err.message}`);
+          tarjeta
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = false));
+        }
+      }
 
-// ===== ACTIVACIONES COPERNICUS =====
-async function cargarActivaciones() {
-  const cont = document.getElementById("lista-activaciones");
-  try {
-    const r = await fetch(
-      "https://mapping.emergency.copernicus.eu/activations/api/activations/?limit=5&ordering=-activation_time",
-      { headers: { "Accept": "application/json" } }
-    );
-    if (!r.ok) throw new Error(`${r.status}`);
-    const datos = await r.json();
-    const items = Array.isArray(datos) ? datos : (datos.results || []);
-    if (!items.length) throw new Error("sin resultados");
-    cont.innerHTML = items.slice(0, 5).map(a => tarjetaActivacion(a, true)).join("");
-  } catch (_) {
-    try {
-      const activaciones = await listarActivaciones(_token);
-      cont.innerHTML = activaciones.slice(0, 5).map(a => tarjetaActivacionBackend(a)).join("");
-    } catch (_) {
-      cont.innerHTML = `
+      // ===== ACTIVACIONES COPERNICUS =====
+      async function cargarActivaciones() {
+        const cont = document.getElementById("lista-activaciones");
+        try {
+          const r = await fetch(
+            "https://mapping.emergency.copernicus.eu/activations/api/activations/?limit=5&ordering=-activation_time",
+            { headers: { Accept: "application/json" } },
+          );
+          if (!r.ok) throw new Error(`${r.status}`);
+          const datos = await r.json();
+          const items = Array.isArray(datos) ? datos : datos.results || [];
+          if (!items.length) throw new Error("sin resultados");
+          cont.innerHTML = items
+            .slice(0, 5)
+            .map((a) => tarjetaActivacion(a, true))
+            .join("");
+        } catch (_) {
+          try {
+            const activaciones = await listarActivaciones(_token);
+            cont.innerHTML = activaciones
+              .slice(0, 5)
+              .map((a) => tarjetaActivacionBackend(a))
+              .join("");
+          } catch (_) {
+            cont.innerHTML = `
         <div class="activacion">
           <div class="activacion__titulo">Ver activaciones en el portal oficial</div>
           <div class="activacion__meta">Copernicus Emergency Management Service</div>
           <a href="https://mapping.emergency.copernicus.eu/activations/"
              target="_blank" class="btn-usar-activacion">Abrir portal →</a>
         </div>`;
-    }
-  }
-  // Añadir listeners a los botones "Usar"
-  cont.querySelectorAll(".btn-usar-act").forEach(btn => {
-    btn.addEventListener("click", () => mostrarModalActivacion(
-      btn.dataset.codigo, btn.dataset.titulo, btn.dataset.tipo, btn.dataset.fecha
-    ));
-  });
-}
+          }
+        }
+        // Añadir listeners a los botones "Usar"
+        cont.querySelectorAll(".btn-usar-act").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            mostrarModalActivacion(
+              btn.dataset.codigo,
+              btn.dataset.titulo,
+              btn.dataset.tipo,
+              btn.dataset.fecha,
+            ),
+          );
+        });
+      }
 
-function tarjetaActivacion(a, desdePortal) {
-  const codigo = a.code || a.activation_code || "";
-  const titulo = a.name || a.title || "";
-  const fecha = (a.activationTime || a.activation_time || "").slice(0, 10);
-  const cat = a.category || {};
-  const tipo = typeof cat === "object" ? (cat.name || cat.slug || "") : cat;
-  const paises = (a.countries || []).map(p => typeof p === "object" ? p.short_name : p).join(", ");
-  const url = `https://mapping.emergency.copernicus.eu/activations/${codigo}/`;
-  return `
+      function tarjetaActivacion(a, desdePortal) {
+        const codigo = a.code || a.activation_code || "";
+        const titulo = a.name || a.title || "";
+        const fecha = (a.activationTime || a.activation_time || "").slice(
+          0,
+          10,
+        );
+        const cat = a.category || {};
+        const tipo = typeof cat === "object" ? cat.name || cat.slug || "" : cat;
+        const paises = (a.countries || [])
+          .map((p) => (typeof p === "object" ? p.short_name : p))
+          .join(", ");
+        const url = `https://mapping.emergency.copernicus.eu/activations/${codigo}/`;
+        return `
     <div class="activacion">
       <div class="activacion__codigo">${codigo}</div>
       <div class="activacion__titulo" title="${titulo}">${titulo}</div>
-      <div class="activacion__meta">${tipo}${paises ? ' · ' + paises : ''}${fecha ? ' · ' + fecha : ''}</div>
+      <div class="activacion__meta">${tipo}${paises ? " · " + paises : ""}${fecha ? " · " + fecha : ""}</div>
       <div style="display:flex;gap:5px;margin-top:6px">
         <a href="${url}" target="_blank" class="btn-usar-activacion" style="flex:1">Ver →</a>
         <button class="btn-usar-activacion btn-usar-act" style="flex:1;background:var(--navy);color:#fff;border-color:var(--navy)"
@@ -1234,14 +1539,14 @@ function tarjetaActivacion(a, desdePortal) {
         </button>
       </div>
     </div>`;
-}
+      }
 
-function tarjetaActivacionBackend(a) {
-  return `
+      function tarjetaActivacionBackend(a) {
+        return `
     <div class="activacion">
       <div class="activacion__codigo">${a.codigo}</div>
       <div class="activacion__titulo" title="${a.titulo}">${a.titulo}</div>
-      <div class="activacion__meta">${a.tipo_desastre}${a.pais ? ' · '+a.pais : ''}${a.fecha ? ' · '+a.fecha : ''}</div>
+      <div class="activacion__meta">${a.tipo_desastre}${a.pais ? " · " + a.pais : ""}${a.fecha ? " · " + a.fecha : ""}</div>
       <div style="display:flex;gap:5px;margin-top:6px">
         <a href="${a.url}" target="_blank" class="btn-usar-activacion" style="flex:1">Ver →</a>
         <button class="btn-usar-activacion btn-usar-act" style="flex:1;background:var(--navy);color:#fff;border-color:var(--navy)"
@@ -1251,17 +1556,17 @@ function tarjetaActivacionBackend(a) {
         </button>
       </div>
     </div>`;
-}
+      }
 
-// Modal para configurar la zona a descargar
-function mostrarModalActivacion(codigo, tituloEnc, tipoEnc, fecha) {
-  const titulo = decodeURIComponent(tituloEnc);
-  const tipo = decodeURIComponent(tipoEnc);
+      // Modal para configurar la zona a descargar
+      function mostrarModalActivacion(codigo, tituloEnc, tipoEnc, fecha) {
+        const titulo = decodeURIComponent(tituloEnc);
+        const tipo = decodeURIComponent(tipoEnc);
 
-  const modal = document.createElement("div");
-  modal.style.cssText = `position:fixed;inset:0;background:rgba(9,46,78,0.7);z-index:1000;
+        const modal = document.createElement("div");
+        modal.style.cssText = `position:fixed;inset:0;background:rgba(9,46,78,0.7);z-index:1000;
     display:flex;align-items:center;justify-content:center;padding:20px`;
-  modal.innerHTML = `
+        modal.innerHTML = `
     <div style="background:#fff;border-radius:14px;padding:24px;max-width:420px;width:100%">
       <h3 style="font-size:15px;color:var(--navy);margin-bottom:4px">Usar activación</h3>
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">${titulo} · ${fecha}</p>
@@ -1269,13 +1574,19 @@ function mostrarModalActivacion(codigo, tituloEnc, tipoEnc, fecha) {
         Define la zona geográfica a descargar (bounding box en grados decimales):
       </p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-        ${["lat_min:Latitud mínima","lon_min:Longitud mínima","lat_max:Latitud máxima","lon_max:Longitud máxima"]
-          .map(f => {
+        ${[
+          "lat_min:Latitud mínima",
+          "lon_min:Longitud mínima",
+          "lat_max:Latitud máxima",
+          "lon_max:Longitud máxima",
+        ]
+          .map((f) => {
             const [id, lbl] = f.split(":");
             return `<div><label style="font-size:11px;color:var(--muted)">${lbl}</label>
               <input id="modal-${id}" type="number" step="0.001"
                 style="width:100%;padding:7px 8px;border:1.5px solid var(--border);border-radius:7px;font:inherit;font-size:13px" /></div>`;
-          }).join("")}
+          })
+          .join("")}
       </div>
       <div style="display:flex;gap:8px">
         <button id="modal-cancelar" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font:inherit">
@@ -1288,117 +1599,153 @@ function mostrarModalActivacion(codigo, tituloEnc, tipoEnc, fecha) {
       <p id="modal-error" style="color:var(--red);font-size:11px;margin-top:8px;min-height:16px"></p>
     </div>`;
 
-  document.body.appendChild(modal);
-  document.getElementById("modal-cancelar").onclick = () => modal.remove();
-  document.getElementById("modal-ok").onclick = async () => {
-    const btn = document.getElementById("modal-ok");
-    const err = document.getElementById("modal-error");
-    const vals = ["lat_min","lon_min","lat_max","lon_max"].map(id =>
-      parseFloat(document.getElementById(`modal-${id}`).value));
-    if (vals.some(isNaN)) { err.textContent = "Rellena todas las coordenadas."; return; }
-    const [lat_min, lon_min, lat_max, lon_max] = vals;
+        document.body.appendChild(modal);
+        document.getElementById("modal-cancelar").onclick = () =>
+          modal.remove();
+        document.getElementById("modal-ok").onclick = async () => {
+          const btn = document.getElementById("modal-ok");
+          const err = document.getElementById("modal-error");
+          const vals = ["lat_min", "lon_min", "lat_max", "lon_max"].map((id) =>
+            parseFloat(document.getElementById(`modal-${id}`).value),
+          );
+          if (vals.some(isNaN)) {
+            err.textContent = "Rellena todas las coordenadas.";
+            return;
+          }
+          const [lat_min, lon_min, lat_max, lon_max] = vals;
 
-    btn.disabled = true;
-    btn.textContent = "Descargando… (puede tardar varios minutos)";
-    err.textContent = "";
-    try {
-      const escena = await usarActivacion({
-        codigo, lat_min, lon_min, lat_max, lon_max,
-        fecha_desastre: fecha,
-        titulo, tipo_desastre: tipo,
-      }, _token);
-      modal.remove();
-      // Refrescar el selector de escenas y seleccionar la nueva
-      const escenas = await listarEscenas(_token);
-      const sel = document.getElementById("selector-escena");
-      sel.innerHTML = escenas.map(e =>
-        `<option value="${e.escena}">${e.escena} · ${e.tipo_desastre}</option>`).join("");
-      if (escena.escena) {
-        sel.value = escena.escena;
-        _escena = escena.escena;
+          btn.disabled = true;
+          btn.textContent = "Descargando… (puede tardar varios minutos)";
+          err.textContent = "";
+          try {
+            const escena = await usarActivacion(
+              {
+                codigo,
+                lat_min,
+                lon_min,
+                lat_max,
+                lon_max,
+                fecha_desastre: fecha,
+                titulo,
+                tipo_desastre: tipo,
+              },
+              _token,
+            );
+            modal.remove();
+            // Refrescar el selector de escenas y seleccionar la nueva
+            const escenas = await listarEscenas(_token);
+            const sel = document.getElementById("selector-escena");
+            sel.innerHTML = escenas
+              .map(
+                (e) =>
+                  `<option value="${e.escena}">${e.escena} · ${e.tipo_desastre}</option>`,
+              )
+              .join("");
+            if (escena.escena) {
+              sel.value = escena.escena;
+              _escena = escena.escena;
+            }
+            alert(
+              `✅ Activación descargada: ${escena.escena}\nYa puedes pulsar "Analizar escena".`,
+            );
+          } catch (e) {
+            err.textContent = e.message;
+            btn.disabled = false;
+            btn.textContent = "Descargar y analizar";
+          }
+        };
       }
-      alert(`✅ Activación descargada: ${escena.escena}\nYa puedes pulsar "Analizar escena".`);
-    } catch (e) {
-      err.textContent = e.message;
-      btn.disabled = false;
-      btn.textContent = "Descargar y analizar";
-    }
-  };
-}
 
-// ===== REPORTE LOCAL =====
-let _lat = null, _lng = null;
+      // ===== REPORTE LOCAL =====
+      let _lat = null,
+        _lng = null;
 
-document.getElementById("btn-reportar").addEventListener("click", () => {
-  document.getElementById("form-reporte").classList.remove("hidden");
-  document.getElementById("reporte-aviso").textContent = "Haz clic en el mapa para marcar el lugar…";
-  _esperandoUbicacion = true;
-  _mapa.getContainer().style.cursor = "crosshair";
-});
+      document.getElementById("btn-reportar").addEventListener("click", () => {
+        document.getElementById("form-reporte").classList.remove("hidden");
+        document.getElementById("reporte-aviso").textContent =
+          "Haz clic en el mapa para marcar el lugar…";
+        _esperandoUbicacion = true;
+        _mapa.getContainer().style.cursor = "crosshair";
+      });
 
-document.getElementById("reporte-cat").addEventListener("change", e => {
-  document.getElementById("grupo-dano").style.display =
-    e.target.value === "dano" ? "block" : "none";
-});
+      document.getElementById("reporte-cat").addEventListener("change", (e) => {
+        document.getElementById("grupo-dano").style.display =
+          e.target.value === "dano" ? "block" : "none";
+      });
 
-document.querySelector(".btn-cancelar-reporte").addEventListener("click", () => {
-  cerrarFormReporte();
-});
+      document
+        .querySelector(".btn-cancelar-reporte")
+        .addEventListener("click", () => {
+          cerrarFormReporte();
+        });
 
-document.getElementById("form-reporte").addEventListener("submit", async e => {
-  e.preventDefault();
-  if (!_lat || !_lng) {
-    document.getElementById("reporte-aviso").textContent = "Marca primero el lugar en el mapa.";
-    return;
-  }
-  const cat = document.getElementById("reporte-cat").value;
-  const payload = {
-    escena: _escena,
-    categoria: cat,
-    latitud: _lat,
-    longitud: _lng,
-    descripcion: document.getElementById("reporte-desc").value.trim(),
-    reportado_por: document.getElementById("reporte-autor").value.trim() || "vecino/a anónimo",
-  };
-  if (cat === "dano") payload.dano = document.getElementById("reporte-dano").value;
+      document
+        .getElementById("form-reporte")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!_lat || !_lng) {
+            document.getElementById("reporte-aviso").textContent =
+              "Marca primero el lugar en el mapa.";
+            return;
+          }
+          const cat = document.getElementById("reporte-cat").value;
+          const payload = {
+            escena: _escena,
+            categoria: cat,
+            latitud: _lat,
+            longitud: _lng,
+            descripcion: document.getElementById("reporte-desc").value.trim(),
+            reportado_por:
+              document.getElementById("reporte-autor").value.trim() ||
+              "vecino/a anónimo",
+          };
+          if (cat === "dano")
+            payload.dano = document.getElementById("reporte-dano").value;
 
-  const btn = document.querySelector(".btn-publicar-reporte");
-  btn.disabled = true;
-  try {
-    const resultado = await crearReporte(payload, _token);
-    cerrarFormReporte();
-    // Mostrar resultado del cruce observación-satélite (pieza 2 de la IA)
-    if (resultado.coherencia) {
-      const iconos = { coherente:"✅", posible:"⚠️", no_detectable:"🔍" };
-      const nombres = {
-        coherente:"Coherente con el satélite",
-        posible:"Posible (no concluyente)",
-        no_detectable:"No detectable por satélite"
-      };
-      alert(
-        `${iconos[resultado.coherencia]} ${nombres[resultado.coherencia]}\n\n` +
-        `${resultado.coherencia_explicacion}\n\n` +
-        `Reporte guardado. La administradora lo revisará.`
-      );
-    }
-    await refrescar();
-  } catch (err) {
-    document.getElementById("reporte-aviso").textContent = `Error: ${err.message}`;
-  } finally {
-    btn.disabled = false;
-  }
-});
+          const btn = document.querySelector(".btn-publicar-reporte");
+          btn.disabled = true;
+          try {
+            const resultado = await crearReporte(payload, _token);
+            cerrarFormReporte();
+            // Mostrar resultado del cruce observación-satélite (pieza 2 de la IA)
+            if (resultado.coherencia) {
+              const iconos = {
+                coherente: "✅",
+                posible: "⚠️",
+                no_detectable: "🔍",
+              };
+              const nombres = {
+                coherente: "Coherente con el satélite",
+                posible: "Posible (no concluyente)",
+                no_detectable: "No detectable por satélite",
+              };
+              alert(
+                `${iconos[resultado.coherencia]} ${nombres[resultado.coherencia]}\n\n` +
+                  `${resultado.coherencia_explicacion}\n\n` +
+                  `Reporte guardado. La administradora lo revisará.`,
+              );
+            }
+            await refrescar();
+          } catch (err) {
+            document.getElementById("reporte-aviso").textContent =
+              `Error: ${err.message}`;
+          } finally {
+            btn.disabled = false;
+          }
+        });
 
-function cerrarFormReporte() {
-  document.getElementById("form-reporte").classList.add("hidden");
-  document.getElementById("form-reporte").reset();
-  document.getElementById("grupo-dano").style.display = "block";
-  _esperandoUbicacion = false;
-  _mapa.getContainer().style.cursor = "";
-  if (_marcadorProv) { _mapa.removeLayer(_marcadorProv); _marcadorProv = null; }
-  _lat = _lng = null;
-}
-</script>
-
-</body>
+      function cerrarFormReporte() {
+        document.getElementById("form-reporte").classList.add("hidden");
+        document.getElementById("form-reporte").reset();
+        document.getElementById("grupo-dano").style.display = "block";
+        _esperandoUbicacion = false;
+        _mapa.getContainer().style.cursor = "";
+        if (_marcadorProv) {
+          _mapa.removeLayer(_marcadorProv);
+          _marcadorProv = null;
+        }
+        _lat = _lng = null;
+      }
+    </script>
+  </body>
 </html>
