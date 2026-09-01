@@ -1,1 +1,2 @@
-// Pruebas de la tarjeta de validación. TODO (Helen).
+// Pruebas de la tarjeta de validación (jsdom).
+// TODO (Helen).

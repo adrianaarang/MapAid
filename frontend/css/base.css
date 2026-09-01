@@ -1,1 +1,52 @@
-/* Estilos base. TODO (Helen). */
+/* Estilos base compartidos. */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 8px 12px;
+}
+
+button:hover { border-color: var(--mapaid-navy); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+select, input {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.mapaid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space);
+  padding: 10px 16px;
+  background: var(--mapaid-navy);
+  color: #fff;
+}
+
+.mapaid-header__marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mapaid-header__marca img { height: 32px; }
+.mapaid-header__lema { font-size: 0.8rem; opacity: 0.75; font-weight: 400; }

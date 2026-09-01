@@ -5,5 +5,11 @@ python-dotenv
 requests
 Pillow
 numpy
+bcrypt
+python-jose[cryptography]
+# Modelo de detección de daños (entrenamiento + inferencia)
 torch
 torchvision
+segmentation-models-pytorch
+albumentations
+opencv-python
