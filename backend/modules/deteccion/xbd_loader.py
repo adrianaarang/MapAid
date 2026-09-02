@@ -17,6 +17,8 @@ from PIL import Image
 from config import DATA_RAW_DIR
 
 _XBD_DIR = Path(DATA_RAW_DIR) / "xbd"
+SPLITS = ["", "tier1", "hold", "test", "train", "tier3"]
+
 
 # Soporte para datasets con estructura tier1/tier2/tier3
 # Si no hay imágenes directamente en xbd/images, buscar en tier1
