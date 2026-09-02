@@ -164,15 +164,18 @@ DATA_PROCESSED_DIR=../data/processed
 
 ## Reentrenar el modelo
 
-El notebook `notebooks/MapAid_Entrenamiento_Local.ipynb` está listo para ejecutarse en **Kaggle** con GPU P100 (gratuita).
+El notebook `notebooks/MapAid_Entrenamiento_Kaggle.ipynb` está listo para ejecutarse en **Kaggle** con GPU P100 (gratuita).
 
-1. Sube el notebook a Kaggle → New Notebook
-2. Añade el dataset `qianlanzz/xbd-dataset`
-3. Activa GPU P100 en Session options
-4. Ejecuta todas las celdas (~3-4 horas)
-5. Descarga `modelo_danos.pt` y cópialo en `backend/ia/`
+1. Sube el notebook a Kaggle → New Notebook → Import Notebook
+2. Panel derecho → **Add data** → buscar `qianlanzz/xbd-dataset`
+3. **Session options** → **GPU P100**
+4. Ejecutar todas las celdas (~3-4 horas)
+5. Panel derecho → **Output** → descargar `modelo_danos.pt`
+6. Copiar en `backend/ia/modelo_danos.pt`
 
 El backend lo detecta automáticamente al arrancar.
+
+> Resultado obtenido: **IoU 0.198** con tier1 + tier3, ResNet34, 30 épocas, GPU P100.
 
 ---
 
