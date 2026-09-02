@@ -37,8 +37,10 @@ _TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol
 _CATALOGUE_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1"
 _DOWNLOAD_URL = "https://zipper.dataspace.copernicus.eu/zip"
 
-# Feed público de activaciones CEMS — API JSON (no requiere autenticación)
-_CEMS_API_URL = "https://rapidmapping.emergency.copernicus.eu/backend/dashboard-api/public-activations-info/"
+# Feed público de activaciones CEMS — API JSON (no requiere autenticación).
+# OJO: usar la API del portal "mapping" (activations), NO la de "rapidmapping"
+# (dashboard-api), que no incluye datos geográficos (centroid) por activación.
+_CEMS_API_URL = "https://mapping.emergency.copernicus.eu/activations/api/activations/"
 
 _TIMEOUT = 30
 _IMG_DIR = Path(DATA_RAW_DIR) / "copernicus"
@@ -91,17 +93,83 @@ def _cabeceras() -> dict:
 
 # ===== ACTIVACIONES CEMS =====
 
+def _extraer_coordenadas(item: dict) -> tuple[float | None, float | None]:
+    """Intenta sacar (lat, lon) de un item de la API CEMS, sea cual sea
+    el nombre/formato del campo geográfico que use este endpoint.
+
+    Se prueba en este orden: centroid (WKT o GeoJSON), geometry
+    (GeoJSON Point/Polygon), bbox/boundingBox, y campos planos
+    lat/lon o latitude/longitude.
+    """
+    import re
+
+    def _num(v):
+        try:
+            f = float(v)
+            return f if f == f else None  # descarta NaN
+        except (TypeError, ValueError):
+            return None
+
+    # 1. centroid como WKT: "POINT (lon lat)" o "SRID=4326;POINT (lon lat)"
+    centroid = item.get("centroid")
+    if isinstance(centroid, str):
+        nums = re.findall(r"[-+]?\d*\.?\d+", centroid)
+        if len(nums) >= 2:
+            lon, lat = _num(nums[-2]), _num(nums[-1])
+            if lat is not None and lon is not None:
+                return lat, lon
+
+    # 2. centroid o geometry como GeoJSON: {"type": "Point", "coordinates": [lon, lat]}
+    for campo in ("centroid", "geometry"):
+        geo = item.get(campo)
+        if isinstance(geo, dict):
+            coords = geo.get("coordinates")
+            # Point: [lon, lat]. Polygon/otros: anidado, coger el primer punto.
+            while isinstance(coords, list) and coords and isinstance(coords[0], list):
+                coords = coords[0]
+            if isinstance(coords, list) and len(coords) >= 2:
+                lon, lat = _num(coords[0]), _num(coords[1])
+                if lat is not None and lon is not None:
+                    return lat, lon
+
+    # 3. bounding box: {"west":..,"south":..,"east":..,"north":..} o similares
+    for campo in ("bbox", "boundingBox", "bounding_box"):
+        bbox = item.get(campo)
+        if isinstance(bbox, dict):
+            oeste = _num(bbox.get("west", bbox.get("lon_min", bbox.get("minx"))))
+            este = _num(bbox.get("east", bbox.get("lon_max", bbox.get("maxx"))))
+            sur = _num(bbox.get("south", bbox.get("lat_min", bbox.get("miny"))))
+            norte = _num(bbox.get("north", bbox.get("lat_max", bbox.get("maxy"))))
+            if None not in (oeste, este, sur, norte):
+                return (sur + norte) / 2, (oeste + este) / 2
+        elif isinstance(bbox, list) and len(bbox) == 4:
+            # formato habitual [oeste, sur, este, norte]
+            oeste, sur, este, norte = (_num(v) for v in bbox)
+            if None not in (oeste, sur, este, norte):
+                return (sur + norte) / 2, (oeste + este) / 2
+
+    # 4. campos planos directos
+    lat = _num(item.get("lat", item.get("latitude")))
+    lon = _num(item.get("lon", item.get("longitude", item.get("lng"))))
+    if lat is not None and lon is not None:
+        return lat, lon
+
+    return None, None
+
+
 def listar_activaciones(max_resultados: int = 10) -> list[dict]:
     """Activaciones recientes de emergencia publicadas por Copernicus CEMS.
 
     Usa la API JSON pública de Rapid Mapping — no requiere autenticación.
     Devuelve una lista de diccionarios con: codigo, titulo, tipo_desastre,
-    fecha, pais, url.
+    fecha, pais, url, latitud, longitud (latitud/longitud pueden ser
+    None si la API no trae datos geográficos reconocibles para esa
+    activación).
     """
     try:
         respuesta = requests.get(
             _CEMS_API_URL,
-            params={"limit": max_resultados, "offset": 0},
+            params={"limit": max_resultados, "offset": 0, "ordering": "-activation_time"},
             timeout=_TIMEOUT,
         )
         respuesta.raise_for_status()
@@ -115,6 +183,12 @@ def listar_activaciones(max_resultados: int = 10) -> list[dict]:
 
     # La API devuelve directamente una lista o un dict con 'results'
     items = datos if isinstance(datos, list) else datos.get("results", datos.get("activations", []))
+
+    if items:
+        # Log de depuración: qué claves trae realmente el primer item.
+        # Útil una sola vez para confirmar el nombre del campo geográfico
+        # de este endpoint concreto; se puede quitar cuando ya no haga falta.
+        print(f"[copernicus] Claves disponibles en un item de activación: {sorted(items[0].keys())}")
 
     activaciones = []
     for item in items[:max_resultados]:
@@ -138,6 +212,10 @@ def listar_activaciones(max_resultados: int = 10) -> list[dict]:
 
         url = f"https://mapping.emergency.copernicus.eu/activations/{codigo}/" if codigo else ""
 
+        lat, lon = _extraer_coordenadas(item)
+        if lat is None or lon is None:
+            print(f"[copernicus] Activación {codigo} sin coordenadas reconocibles en la API CEMS.")
+
         activaciones.append({
             "codigo": codigo,
             "titulo": titulo,
@@ -145,6 +223,8 @@ def listar_activaciones(max_resultados: int = 10) -> list[dict]:
             "fecha": fecha,
             "pais": pais,
             "url": url,
+            "latitud": lat,
+            "longitud": lon,
         })
 
     return activaciones
