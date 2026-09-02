@@ -719,6 +719,7 @@
         transition: all 0.12s;
         text-align: center;
         text-decoration: none;
+        display: inline-block;
       }
 
       .btn-usar-activacion:hover {
@@ -961,7 +962,6 @@
         contarPorOrigen,
         urlImagen,
         listarActivaciones,
-        usarActivacion,
       } from "../js/core/api.js";
 
       // ===== ESTADO GLOBAL =====
@@ -1625,19 +1625,6 @@
             }
           });
         });
-
-        // Listeners para los botones "Usar esta activación"
-        cont.querySelectorAll(".btn-usar-act").forEach((btn) => {
-          btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            mostrarModalActivacion(
-              btn.dataset.codigo,
-              btn.dataset.titulo,
-              btn.dataset.tipo,
-              btn.dataset.fecha,
-            );
-          });
-        });
       }
 
       function toggleCopernicusEnMapa() {
@@ -1866,13 +1853,8 @@
             <div class="activacion__codigo">${codigo}</div>
             <div class="activacion__titulo" title="${titulo}">${titulo}</div>
             <div class="activacion__meta">${tipo}${paises ? " · " + paises : ""}${fecha ? " · " + fecha : ""}</div>
-            <div style="display:flex;gap:5px;margin-top:6px">
-              <a href="${url}" target="_blank" class="btn-usar-activacion" style="flex:1">Ver →</a>
-              <button class="btn-usar-activacion btn-usar-act" style="flex:1;background:var(--navy);color:#fff;border-color:var(--navy)"
-                data-codigo="${codigo}" data-titulo="${encodeURIComponent(titulo)}"
-                data-tipo="${encodeURIComponent(tipo)}" data-fecha="${fecha}">
-                Usar esta activación
-              </button>
+            <div style="margin-top:6px">
+              <a href="${url}" target="_blank" class="btn-usar-activacion">Ver en portal oficial →</a>
             </div>
           </div>`;
       }
@@ -1883,112 +1865,10 @@
             <div class="activacion__codigo">${a.codigo}</div>
             <div class="activacion__titulo" title="${a.titulo}">${a.titulo}</div>
             <div class="activacion__meta">${a.tipo_desastre}${a.pais ? " · " + a.pais : ""}${a.fecha ? " · " + a.fecha : ""}</div>
-            <div style="display:flex;gap:5px;margin-top:6px">
-              <a href="${a.url}" target="_blank" class="btn-usar-activacion" style="flex:1">Ver →</a>
-              <button class="btn-usar-activacion btn-usar-act" style="flex:1;background:var(--navy);color:#fff;border-color:var(--navy)"
-                data-codigo="${a.codigo}" data-titulo="${encodeURIComponent(a.titulo)}"
-                data-tipo="${encodeURIComponent(a.tipo_desastre)}" data-fecha="${a.fecha}">
-                Usar esta activación
-              </button>
+            <div style="margin-top:6px">
+              <a href="${a.url}" target="_blank" class="btn-usar-activacion">Ver en portal oficial →</a>
             </div>
           </div>`;
-      }
-
-      // Modal para configurar la zona a descargar
-      function mostrarModalActivacion(codigo, tituloEnc, tipoEnc, fecha) {
-        const titulo = decodeURIComponent(tituloEnc);
-        const tipo = decodeURIComponent(tipoEnc);
-
-        const modal = document.createElement("div");
-        modal.style.cssText = `position:fixed;inset:0;background:rgba(9,46,78,0.7);z-index:1000;
-                display:flex;align-items:center;justify-content:center;padding:20px`;
-        modal.innerHTML = `
-          <div style="background:#fff;border-radius:14px;padding:24px;max-width:420px;width:100%">
-            <h3 style="font-size:15px;color:var(--navy);margin-bottom:4px">Usar activación</h3>
-            <p style="font-size:12px;color:var(--muted);margin-bottom:16px">${titulo} · ${fecha}</p>
-            <p style="font-size:12px;color:var(--muted);margin-bottom:12px">
-              Define la zona geográfica a descargar (bounding box en grados decimales):
-            </p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-              ${[
-                "lat_min:Latitud mínima",
-                "lon_min:Longitud mínima",
-                "lat_max:Latitud máxima",
-                "lon_max:Longitud máxima",
-              ]
-                .map((f) => {
-                  const [id, lbl] = f.split(":");
-                  return `<div><label style="font-size:11px;color:var(--muted)">${lbl}</label>
-                    <input id="modal-${id}" type="number" step="0.001"
-                      style="width:100%;padding:7px 8px;border:1.5px solid var(--border);border-radius:7px;font:inherit;font-size:13px" /></div>`;
-                })
-                .join("")}
-            </div>
-            <div style="display:flex;gap:8px">
-              <button id="modal-cancelar" style="flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font:inherit">
-                Cancelar
-              </button>
-              <button id="modal-ok" style="flex:1;padding:9px;border:none;border-radius:8px;background:var(--navy);color:#fff;cursor:pointer;font:inherit;font-weight:600">
-                Descargar y analizar
-              </button>
-            </div>
-            <p id="modal-error" style="color:var(--red);font-size:11px;margin-top:8px;min-height:16px"></p>
-          </div>`;
-
-        document.body.appendChild(modal);
-        document.getElementById("modal-cancelar").onclick = () =>
-          modal.remove();
-        document.getElementById("modal-ok").onclick = async () => {
-          const btn = document.getElementById("modal-ok");
-          const err = document.getElementById("modal-error");
-          const vals = ["lat_min", "lon_min", "lat_max", "lon_max"].map((id) =>
-            parseFloat(document.getElementById(`modal-${id}`).value),
-          );
-          if (vals.some(isNaN)) {
-            err.textContent = "Rellena todas las coordenadas.";
-            return;
-          }
-          const [lat_min, lon_min, lat_max, lon_max] = vals;
-
-          btn.disabled = true;
-          btn.textContent = "Descargando… (puede tardar varios minutos)";
-          err.textContent = "";
-          try {
-            const escena = await usarActivacion(
-              {
-                codigo,
-                lat_min,
-                lon_min,
-                lat_max,
-                lon_max,
-                fecha_desastre: fecha,
-                titulo,
-                tipo_desastre: tipo,
-              },
-              _token,
-            );
-            modal.remove();
-            const escenas = await listarEscenas(_token);
-            const sel = document.getElementById("selector-escena");
-            sel.innerHTML = escenas
-              .map(
-                (e) =>
-                  `<option value="${e.escena}">${e.escena} · ${e.tipo_desastre}</option>`,
-              )
-              .join("");
-            if (escena.escena) {
-              sel.value = escena.escena;
-              _escena = escena.escena;
-            }
-            alert(
-              `✅ Activación descargada: ${escena.escena}\nYa puedes pulsar "Analizar escena".`,
-            );
-          } catch (e) {
-            err.textContent = e.message;
-            btn.disabled = false;
-            btn.textContent = "Descargar y analizar";
-          }
-        };
       }
 
       // ===== REPORTE LOCAL =====
