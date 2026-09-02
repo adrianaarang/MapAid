@@ -117,17 +117,7 @@ tests/                 pruebas backend y frontend
 
 ## Puesta en marcha
 
-### Opción 1: Inicio rápido con script (Linux / macOS / Git Bash)
-
-Si estás en **Linux**, **macOS** o usas **Git Bash** en Windows, puedes ejecutar el script automatizado:
-
-```bash
-chmod +x start.sh
-./start.sh
-```
-
-Opción 2: Inicio manual (Todas las plataformas / Windows)
-```powersheel
+```powershell
 # Backend
 cd backend
 pip install -r requirements.txt
@@ -146,9 +136,6 @@ python -m http.server 5500
 | http://localhost:8000/docs | Documentación interactiva de la API |
 
 ---
-
-
-
 
 ## Pruebas
 

@@ -17,7 +17,16 @@ from PIL import Image
 from config import DATA_RAW_DIR
 
 _XBD_DIR = Path(DATA_RAW_DIR) / "xbd"
-SPLITS = ["", "tier1", "hold", "test", "train", "tier3"]
+
+# Soporte para datasets con estructura tier1/tier2/tier3
+# Si no hay imágenes directamente en xbd/images, buscar en tier1
+_TIER1_DIR = _XBD_DIR / "tier1"
+if not (_XBD_DIR / "images").is_dir() and (_TIER1_DIR / "images").is_dir():
+    IMAGES_DIR = _TIER1_DIR / "images"
+    LABELS_DIR = _TIER1_DIR / "labels"
+else:
+    IMAGES_DIR = _XBD_DIR / "images"
+    LABELS_DIR = _XBD_DIR / "labels"
 
 
 class SceneNotFound(FileNotFoundError):
