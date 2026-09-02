@@ -532,6 +532,68 @@
         width: 100%;
         height: 72px;
         object-fit: cover;
+        cursor: zoom-in;
+        transition: transform 0.18s ease, filter 0.18s ease;
+      }
+
+      .tarjeta__img-wrap img:hover,
+      .tarjeta__img-wrap img:focus-visible {
+        filter: brightness(0.88);
+        transform: scale(1.03);
+        outline: 3px solid var(--teal);
+        outline-offset: -3px;
+      }
+
+      .visor-imagen {
+        position: fixed;
+        inset: 0;
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        background: rgba(0, 0, 0, 0.86);
+      }
+
+      .visor-imagen[hidden] {
+        display: none;
+      }
+
+      .visor-imagen__contenido {
+        position: relative;
+        max-width: min(1100px, 94vw);
+        max-height: 92vh;
+        text-align: center;
+      }
+
+      .visor-imagen__foto {
+        display: block;
+        max-width: 100%;
+        max-height: 82vh;
+        margin: auto;
+        border-radius: 6px;
+        object-fit: contain;
+      }
+
+      .visor-imagen__titulo {
+        margin-top: 10px;
+        color: var(--white);
+        font-weight: 600;
+      }
+
+      .visor-imagen__cerrar {
+        position: absolute;
+        top: -18px;
+        right: -18px;
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--white);
+        color: var(--navy);
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
       }
 
       .tarjeta__img-label {
@@ -1439,6 +1501,22 @@
           }
         });
 
+        div.querySelectorAll(".tarjeta__img-wrap img").forEach((imagen) => {
+          imagen.tabIndex = 0;
+          imagen.setAttribute("role", "button");
+          imagen.setAttribute("aria-label", `Ampliar imagen: ${imagen.alt}`);
+          imagen.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            abrirVisorImagen(imagen.src, `${imagen.alt} · ${s.escena}`);
+          });
+          imagen.addEventListener("keydown", (ev) => {
+            if (ev.key !== "Enter" && ev.key !== " ") return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            abrirVisorImagen(imagen.src, `${imagen.alt} · ${s.escena}`);
+          });
+        });
+
         div.querySelector(".btn-aceptar").addEventListener("click", (ev) => {
           ev.stopPropagation();
           decidir(s.id, "confirmar", div);
@@ -1465,6 +1543,47 @@
         });
 
         return div;
+      }
+
+      function abrirVisorImagen(src, titulo) {
+        let visor = document.getElementById("visor-imagen");
+
+        if (!visor) {
+          visor = document.createElement("div");
+          visor.id = "visor-imagen";
+          visor.className = "visor-imagen";
+          visor.hidden = true;
+          visor.setAttribute("role", "dialog");
+          visor.setAttribute("aria-modal", "true");
+          visor.setAttribute("aria-label", "Imagen ampliada");
+          visor.innerHTML = `
+            <div class="visor-imagen__contenido">
+              <button class="visor-imagen__cerrar" type="button" aria-label="Cerrar imagen">×</button>
+              <img class="visor-imagen__foto" alt="" />
+              <p class="visor-imagen__titulo"></p>
+            </div>`;
+
+          const cerrar = () => {
+            visor.hidden = true;
+            document.body.style.overflow = "";
+          };
+          visor.querySelector(".visor-imagen__cerrar").addEventListener("click", cerrar);
+          visor.addEventListener("click", (ev) => {
+            if (ev.target === visor) cerrar();
+          });
+          document.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape" && !visor.hidden) cerrar();
+          });
+          document.body.appendChild(visor);
+        }
+
+        const foto = visor.querySelector(".visor-imagen__foto");
+        foto.src = src;
+        foto.alt = titulo;
+        visor.querySelector(".visor-imagen__titulo").textContent = titulo;
+        visor.hidden = false;
+        document.body.style.overflow = "hidden";
+        visor.querySelector(".visor-imagen__cerrar").focus();
       }
 
       async function decidir(id, accion, tarjeta, extra = {}) {
