@@ -169,10 +169,11 @@ def crear_reporte(peticion: LocalReportRequest, publico: bool = False) -> dict:
     estado = SuggestionStatus.PENDING.value
 
     # Pieza 2 de la IA: cruzar descripción con imágenes Sentinel-2 en tiempo real
-    # La fecha del desastre se usa para buscar imágenes pre/post en Copernicus.
-    # Si no se indica, usa la fecha actual como referencia.
-    from datetime import date as _date
-    fecha_desastre = getattr(peticion, "disaster_date", None) or _date.today().strftime("%Y-%m-%d")
+    # Si no hay fecha de desastre, usar hace 30 días como referencia
+    # (Sentinel-2 no tiene imágenes del futuro)
+    from datetime import date as _date, timedelta as _timedelta
+    fecha_desastre = getattr(peticion, "disaster_date", None) or \
+        (_date.today() - _timedelta(days=30)).strftime("%Y-%m-%d")
 
     cruce = _ejecutar_cruce(
         descripcion=peticion.description,
