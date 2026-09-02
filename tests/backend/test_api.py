@@ -75,7 +75,7 @@ def test_cooperante_no_puede_validar(cliente):
 def test_sin_token_no_puede_validar(cliente):
     sid = insertar(cliente)
     r = cliente.patch(f"/api/validacion/{sid}", json={"accion": "confirmar"})
-    assert r.status_code == 403
+    assert r.status_code in (401, 403)  # sin token: 401 Unauthorized
 
 
 def test_analizar_escena_inexistente_devuelve_404(cliente):
