@@ -36,3 +36,16 @@ init_db()
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/debug")
+def debug():
+    from modules.deteccion.xbd_loader import IMAGES_DIR, LABELS_DIR, listar_escenas
+    escenas = listar_escenas()
+    return {
+        "images_dir": str(IMAGES_DIR),
+        "labels_dir": str(LABELS_DIR),
+        "images_existe": IMAGES_DIR.is_dir(),
+        "escenas": len(escenas),
+        "primera": escenas[0] if escenas else None,
+    }

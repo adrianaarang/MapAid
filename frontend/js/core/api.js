@@ -101,5 +101,5 @@ export async function listarActivaciones(token, max = 10) {
 }
 
 export function urlImagen(escena, momento) {
-  return `../../data/raw/xbd/images/${escena}_${momento}_disaster.png`;
+  return `../../data/raw/xbd/tier1/images/${escena}_${momento}_disaster.png`;
 }
